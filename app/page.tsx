@@ -71,13 +71,13 @@ export default function HomePage() {
   
   // Estado para controlar estoque em tempo real
   const [stock, setStock] = useState<StockData>({
-    "Combo 2 Botijões de Gás 13kg": 23,
-    "Combo Gás + Garrafão": 31,
-    "3 Garrafões de Água 20L": 18,
-    "Gás de cozinha 13 kg (P13)": 45,
-    "Garrafão de água Mineral 20L": 67,
-    "Água Mineral Serragrande 20L": 52,
-    "Botijão de Gás 8kg P8": 29
+    "Combo 2 Botijões de Gás 13kg": 33,
+    "Combo Gás + Garrafão": 36,
+    "3 Garrafões de Água 20L": 78,
+    "Gás de cozinha 13 kg (P13)": 35,
+    "Garrafão de água Mineral 20L": 47,
+    "Água Mineral Serragrande 20L": 22,
+    "Botijão de Gás 8kg P8": 22
   })
 
   useEffect(() => {
@@ -396,7 +396,7 @@ export default function HomePage() {
         </div>
 
         {/* Imagem do Produto */}
-        <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 flex items-center justify-center bg-gradient-to-br from-orange-50 to-blue-50 rounded-xl p-2">
+        <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 flex items-center justify-center bg-gradient-to-br from-teal-50 to-purple-50 rounded-xl p-2">
           <img
             src={image}
             alt={alt}
@@ -409,7 +409,7 @@ export default function HomePage() {
         
         {/* Preço */}
         <div className="mb-3">
-          <span className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent">{price}</span>
+          <span className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">{price}</span>
         </div>
 
         {/* Badges de Benefícios */}
@@ -418,7 +418,7 @@ export default function HomePage() {
             <Bike size={12} />
             Frete Grátis
           </div>
-          <div className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2 py-1 rounded-md text-xs font-semibold">
+          <div className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-semibold">
             ⚡ {stock[name] || 0} un.
           </div>
         </div>
@@ -431,7 +431,7 @@ export default function HomePage() {
         {/* Botão de Compra */}
         <Button
           onClick={() => handleBuyNow(name)}
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-md hover:shadow-xl transition-all duration-300 text-sm font-bold"
+          className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-md hover:shadow-xl transition-all duration-300 text-sm font-bold"
         >
           <ShoppingCart size={16} />
           Comprar Agora
@@ -456,8 +456,8 @@ export default function HomePage() {
 
           <div className="space-y-6">
             {/* Processo Geral */}
-            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-4 rounded-lg border border-orange-200">
-              <h3 className="font-bold text-orange-800 mb-3 flex items-center gap-2">
+            <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-4 rounded-lg border border-teal-200">
+              <h3 className="font-bold text-teal-800 mb-3 flex items-center gap-2">
                 🚀 <span>Processo Geral</span>
               </h3>
               <div className="space-y-2 text-sm text-gray-700">
@@ -469,8 +469,8 @@ export default function HomePage() {
             </div>
 
             {/* Para Produtos de Gás */}
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg border border-orange-200">
-              <h3 className="font-bold text-orange-800 mb-3 flex items-center gap-2">
+            <div className="bg-gradient-to-r from-rose-50 to-pink-50 p-4 rounded-lg border border-rose-200">
+              <h3 className="font-bold text-rose-800 mb-3 flex items-center gap-2">
                 🔥 <span>Para Produtos de Gás</span>
               </h3>
               <div className="space-y-2 text-sm text-gray-700">
@@ -484,8 +484,8 @@ export default function HomePage() {
             </div>
 
             {/* Para Produtos de Água */}
-            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg border border-blue-200">
-              <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
+            <div className="bg-gradient-to-r from-cyan-50 to-teal-50 p-4 rounded-lg border border-cyan-200">
+              <h3 className="font-bold text-cyan-800 mb-3 flex items-center gap-2">
                 💧 <span>Para Produtos de Água</span>
               </h3>
               <div className="space-y-2 text-sm text-gray-700">
@@ -530,7 +530,7 @@ export default function HomePage() {
                 setShowHowItWorksModal(false)
                 document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" })
               }}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+              className="flex-1 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white"
             >
               Entendi! Fazer Pedido
             </Button>
@@ -577,7 +577,7 @@ export default function HomePage() {
                 <Button
                   type="submit"
                   disabled={loading || cep.length < 9}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                  className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white"
                 >
                   {loading ? "Verificando..." : "Verificar CEP"}
                 </Button>
@@ -591,7 +591,7 @@ export default function HomePage() {
                     requestUserLocation()
                     handleCloseModal()
                   }}
-                  className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
+                  className="w-full border-teal-600 text-teal-600 hover:bg-teal-50"
                 >
                   📍 Usar Minha Localização
                 </Button>
@@ -629,17 +629,17 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-5 h-5 text-orange-600" />
-                  <h3 className="font-semibold text-orange-800">Entrega Rápida!</h3>
+                  <Clock className="w-5 h-5 text-teal-600" />
+                  <h3 className="font-semibold text-teal-800">Entrega Rápida!</h3>
                 </div>
                 <p className="text-sm text-gray-700">
                   Realizamos entrega em até <strong>30 minutos</strong> diretamente no seu endereço!
                 </p>
               </div>
 
-              <Button onClick={handleCloseModal} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white">
+              <Button onClick={handleCloseModal} className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white">
                 Começar a Comprar
               </Button>
             </div>
@@ -693,7 +693,7 @@ export default function HomePage() {
                   <div className="flex gap-3">
                     <Button
                       onClick={confirmLocation}
-                      className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+                      className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold"
                     >
                       ✓ Confirmar Localização
                     </Button>
@@ -725,7 +725,7 @@ export default function HomePage() {
                   
                   <Button
                     onClick={() => setEditingLocation(true)}
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold"
+                    className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold"
                   >
                     📝 Digitar Minha Cidade
                   </Button>
@@ -752,7 +752,7 @@ export default function HomePage() {
                   <div className="flex gap-3">
                     <Button
                       onClick={saveEditedLocation}
-                      className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+                      className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold"
                       disabled={!tempCity.trim()}
                     >
                       Salvar
@@ -778,6 +778,24 @@ export default function HomePage() {
       {/* Header Fixo de Localização */}
       <LocationHeader />
 
+      {/* Banner de Aviso sobre Golpes */}
+      <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white py-3 px-4 shadow-lg">
+        <div className="container mx-auto">
+          <div className="flex items-center justify-center gap-3 text-center">
+            <span className="text-2xl flex-shrink-0">⚠️</span>
+            <div className="flex-1">
+              <p className="text-sm sm:text-base font-bold mb-1">
+                ATENÇÃO: Cuidado com Golpes!
+              </p>
+              <p className="text-xs sm:text-sm">
+                Muitos golpes estão sendo aplicados usando nosso nome. Verifique sempre a URL oficial: 
+                <span className="font-bold ml-1 underline">https://www.distribuidoraconfigas.store</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <header className="bg-white shadow-md sticky top-0 z-40">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -792,7 +810,7 @@ export default function HomePage() {
           <nav className="hidden md:flex items-center space-x-6">
             <a
               href="#produtos"
-              className="text-gray-600 hover:text-blue-600 transition-colors duration-200 text-sm font-medium"
+              className="text-gray-600 hover:text-teal-600 transition-colors duration-200 text-sm font-medium"
               onClick={(e) => {
                 e.preventDefault()
                 document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" })
@@ -802,7 +820,7 @@ export default function HomePage() {
             </a>
             <a
               href="#entrega"
-              className="text-gray-600 hover:text-blue-600 transition-colors duration-200 text-sm font-medium"
+              className="text-gray-600 hover:text-teal-600 transition-colors duration-200 text-sm font-medium"
               onClick={(e) => {
                 e.preventDefault()
                 document.getElementById("entrega")?.scrollIntoView({ behavior: "smooth" })
@@ -815,7 +833,7 @@ export default function HomePage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-600 hover:text-blue-600 p-2"
+              className="text-gray-600 hover:text-teal-600 p-2"
               onClick={() => document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" })}
             >
               <ShoppingCart className="w-5 h-5" />
@@ -829,26 +847,26 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="text-center lg:text-left animate-fade-in-up">
-              <div className="inline-block mb-4 px-4 py-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white rounded-full text-sm font-bold">
+              <div className="inline-block mb-4 px-4 py-2 bg-gradient-to-r from-teal-500 to-purple-600 text-white rounded-full text-sm font-bold">
                 ✨ Novidade: Sem Troca de Vasilhame!
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 leading-tight">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-blue-600">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-purple-600">
                   Gás de Cozinha
                 </span>
                 <br />
                 <span className="text-gray-800">e Água Mineral</span>
               </h1>
               <p className="text-gray-700 mb-6 sm:mb-8 text-lg sm:text-xl">
-  Parceiros das melhores marcas do mercado, oferecemos <span className="text-orange-600 font-bold">Gás de Cozinha</span> e 
-  <span className="text-blue-600 font-bold">Água Mineral</span> em recipientes <span className="font-bold">100% novos</span>, 
-  <span className="font-bold underline decoration-orange-500">sem necessidade de troca</span>. 
+  Parceiros das melhores marcas do mercado, oferecemos <span className="text-rose-600 font-bold">Gás de Cozinha</span> e 
+  <span className="text-cyan-600 font-bold">Água Mineral</span> em recipientes <span className="font-bold">100% novos</span>, 
+  <span className="font-bold underline decoration-teal-500">sem necessidade de troca</span>. 
   Qualidade, praticidade e os melhores preços da região!
 </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-center lg:justify-start">
                 <Button
                   onClick={() => document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" })}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
                   <ShoppingCart size={20} />
                   Fazer Pedido
@@ -856,7 +874,7 @@ export default function HomePage() {
                 <Button
                   onClick={() => setShowHowItWorksModal(true)}
                   variant="outline"
-                  className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-6 sm:px-8 py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="border-2 border-purple-600 text-purple-600 hover:bg-purple-50 px-6 sm:px-8 py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <HelpCircle size={20} />
                   Dúvidas?
@@ -878,11 +896,11 @@ export default function HomePage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="bg-gradient-to-br from-orange-50 to-blue-50 py-12 sm:py-16">
+      <section className="bg-gradient-to-br from-teal-50 to-purple-50 py-12 sm:py-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             <div className="text-center animate-fade-in-up">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center shadow-lg">
                 <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm sm:text-base mb-1 sm:mb-2">Entrega Rápida</h3>
@@ -890,7 +908,7 @@ export default function HomePage() {
             </div>
 
             <div className="text-center animate-fade-in-up animation-delay-100">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                 <Bike className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm sm:text-base mb-1 sm:mb-2">Frete Grátis</h3>
@@ -898,7 +916,7 @@ export default function HomePage() {
             </div>
 
             <div className="text-center animate-fade-in-up animation-delay-200">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
                 <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm sm:text-base mb-1 sm:mb-2">Sem Troca</h3>
@@ -921,7 +939,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16 animate-fade-in-up">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">Nossos Produtos</h2>
-            <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-teal-500 to-purple-500 mx-auto rounded-full"></div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto">
@@ -929,7 +947,7 @@ export default function HomePage() {
             {/* 1. GÁS P13 - MAIS VENDIDO */}
             <ProductCard
               name="Gás de cozinha 13 kg (P13)"
-              price="R$ 98,70"
+              price="R$ 88,70"
               image="/images/gas-p13.png"
               alt="Botijão de Gás P13 13kg"
               description="Gás completo COM botijão novo lacrado! Peça sem sair de casa."
@@ -939,7 +957,7 @@ export default function HomePage() {
             {/* 2. COMBO GÁS + GARRAFÃO */}
             <ProductCard
               name="Combo Gás + Garrafão"
-              price="R$ 123,20"
+              price="R$ 103,20"
               image="/images/comboGas_garrafao.png"
               alt="Combo Gás + Garrafão"
               description="Combo completo com 1 botijão de gás 13kg + 1 garrafão de água 20L. Praticidade e economia em um só pedido."
@@ -950,7 +968,7 @@ export default function HomePage() {
             {/* 3. GARRAFÃO DE ÁGUA */}
             <ProductCard
               name="Garrafão de água Mineral 20L"
-              price="R$ 25,20"
+              price="R$ 29,20"
               image="/images/agua-indaia-20l.png"
               alt="Água Mineral Indaíá 20L"
               description="Garrafão COMPLETO de 20 litros com vasilhame novo! Ideal para residências, empresas e escritórios. Não precisa devolver o vasilhame."
@@ -970,7 +988,7 @@ export default function HomePage() {
             {/* 5. COMBO 2 BOTIJÕES */}
             <ProductCard
               name="Combo 2 Botijões de Gás 13kg"
-              price="R$ 189,90"
+              price="R$ 139,90"
               image="/images/combo 2 botijao 13kg.png"
               alt="Combo 2 Botijões de Gás 13kg"
               description="Combo completo com 2 botijões de gás P13 COM botijões novos lacrados. Máxima economia!"
@@ -988,7 +1006,7 @@ export default function HomePage() {
 
             <ProductCard
               name="Botijão de Gás 8kg P8"
-              price="R$ 94,51"
+              price="R$ 75,53"
               image="/images/gas-p8-8kg.png"
               alt="Botijão de Gás 8kg P8"
               description="Gás P8 completo COM botijão novo. Ideal para quem busca economia e praticidade."
@@ -1002,7 +1020,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16 animate-fade-in-up">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">Nossa Estrutura</h2>
-            <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-teal-500 to-purple-500 mx-auto rounded-full"></div>
             <p className="text-gray-600 mt-4 text-lg max-w-3xl mx-auto">
               Contamos com uma infraestrutura completa para atender você com excelência
             </p>
@@ -1093,7 +1111,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 sm:mb-16 animate-fade-in-up">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">Perguntas Frequentes</h2>
-            <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-teal-500 to-purple-500 mx-auto rounded-full"></div>
           </div>
           <div className="max-w-3xl mx-auto animate-fade-in-up animation-delay-200">
             <Accordion type="single" collapsible className="w-full space-y-3 sm:space-y-4">
