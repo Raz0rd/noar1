@@ -77,7 +77,10 @@ export default function HomePage() {
     "Gás de cozinha 13 kg (P13)": 35,
     "Garrafão de água Mineral 20L": 47,
     "Água Mineral Serragrande 20L": 22,
-    "Botijão de Gás 8kg P8": 22
+    "Botijão de Gás 8kg P8": 22,
+    "Combo 3 Gás 13kg": 28,
+    "Combo 2 Gás + 2 Água": 31,
+    "Combo 2 Gás + 1 Água": 34
   })
 
   useEffect(() => {
@@ -1010,6 +1013,38 @@ export default function HomePage() {
               image="/images/gas-p8-8kg.png"
               alt="Botijão de Gás 8kg P8"
               description="Gás P8 completo COM botijão novo. Ideal para quem busca economia e praticidade."
+            />
+
+            {/* 6. COMBO 3 GÁS 13KG */}
+            <ProductCard
+              name="Combo 3 Gás 13kg"
+              price="R$ 209,00"
+              image="/images/combo3gas13kg.png"
+              alt="Combo 3 Botijões de Gás 13kg"
+              description="Combo super econômico com 3 botijões de gás P13 COM botijões novos lacrados. Máxima economia para sua família!"
+              isBestSeller={true}
+              isCombo={true}
+            />
+
+            {/* 7. COMBO 2 GÁS + 2 ÁGUA */}
+            <ProductCard
+              name="Combo 2 Gás + 2 Água"
+              price="R$ 186,80"
+              image="/images/combo2Gas2Agua.png"
+              alt="Combo 2 Gás + 2 Água"
+              description="Combo completo com 2 botijões de gás 13kg + 2 garrafões de água 20L. Tudo que você precisa em um só pedido!"
+              isBestSeller={true}
+              isCombo={true}
+            />
+
+            {/* 8. COMBO 2 GÁS + 1 ÁGUA */}
+            <ProductCard
+              name="Combo 2 Gás + 1 Água"
+              price="R$ 157,60"
+              image="/images/combo2Gas1Agua.png"
+              alt="Combo 2 Gás + 1 Água"
+              description="Combo prático com 2 botijões de gás 13kg + 1 garrafão de água 20L. Economia e praticidade!"
+              isCombo={true}
             />
           </div>
         </div>
