@@ -620,12 +620,26 @@ export default function CheckoutPage() {
         return
       }
       
-      const response = await fetch(`http://74.50.76.90:7000/f9361c92e28d38772782e826d2442d07c5fdd833d9b3efe4beadffae322292da/cpf/${cleanCpf}`)
+      // Usar API interna para não expor URL externa
+      const response = await fetch('/api/check-cpf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cpf: cleanCpf })
+      })
+      
+      if (!response.ok) {
+        setCpfCheckError('Erro ao verificar CPF. Tente novamente.')
+        setCpfCheckLoading(false)
+        return
+      }
+      
       const data = await response.json()
       
-      if (data && data.nomeCompleto) {
+      if (data.found && data.nomeCompleto) {
         // Cliente encontrado - aplicar desconto
-        setCustomerFound(data)
+        setCustomerFound({ nomeCompleto: data.nomeCompleto })
         setDiscountApproved(true)
         
         // Calcular e aplicar desconto de 10%
