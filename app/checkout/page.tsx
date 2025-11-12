@@ -613,6 +613,13 @@ export default function CheckoutPage() {
     setCpfCheckError('')
     
     try {
+      // Validar se cpfCheck existe
+      if (!cpfCheck || cpfCheck.trim() === '') {
+        setCpfCheckError('Por favor, digite um CPF')
+        setCpfCheckLoading(false)
+        return
+      }
+      
       const cleanCpf = cpfCheck.replace(/\D/g, '')
       if (cleanCpf.length !== 11) {
         setCpfCheckError('CPF deve ter 11 dígitos')
@@ -1102,23 +1109,23 @@ export default function CheckoutPage() {
     
     // localhost - TESTE
     if (host.includes('localhost') || host === '127.0.0.1') {
-      return 'AW-TESTE/LOCALHOST-CONVERSION'
+      return 'AW-17719874737/QES_CJuxsr4bELGpv4FC'
     }
     
     // entregasexpressnasuaporta.store
     // Tag completa: Account ID + Conversion ID
     if (host.includes('entregasexpressnasuaporta.store')) {
-      return 'AW-17554338622/ZCa-CN2Y7qobEL7mx7JB'
+      return 'AW-17719874737/QES_CJuxsr4bELGpv4FC'
     }
     
     // gasbutano.pro (padrão)
     // Tag completa: Account ID + Conversion ID
     if (host.includes('gasbutano.pro')) {
-      return 'AW-17545933033/08VqCI_Qj5obEOnhxq5B'
+      return 'AW-17719874737/QES_CJuxsr4bELGpv4FC'
     }
     
-    // Fallback
-    return null
+    // Fallback - usar a tag padrão
+    return 'AW-17719874737/QES_CJuxsr4bELGpv4FC'
   }
 
   // Função para reportar conversão do Google Ads (quando paga - Compra)
