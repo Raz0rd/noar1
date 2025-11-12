@@ -105,6 +105,7 @@ const formatCep = (value: string) => {
 }
 
 const formatPhone = (value: string) => {
+  if (!value) return ""
   const cleanValue = value.replace(/\D/g, "")
   if (cleanValue.length <= 11) {
     return cleanValue.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
@@ -113,6 +114,7 @@ const formatPhone = (value: string) => {
 }
 
 const formatCPF = (value: string) => {
+  if (!value) return ""
   const cleanValue = value.replace(/\D/g, "")
   if (cleanValue.length <= 11) {
     return cleanValue.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
