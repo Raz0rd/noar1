@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import LocationHeader from "@/components/LocationHeader"
 import { ArrowLeft, MapPin, Clock, CreditCard, Smartphone, Copy, CheckCircle, Star, Plus, X } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 interface AddressData {
@@ -256,16 +256,19 @@ export default function CheckoutPage() {
 
   const productPrices: { [key: string]: number } = {
     "TESTE - Produto R$ 5": 500, // R$ 5,00 em centavos - PRODUTO DE TESTE
-    "Gás de cozinha 13 kg (P13)": 8870, // R$ 98,70 em centavos (COM botijão)
-    "Gás de Cozinha 13kg": 8870, // R$ 98,70 em centavos (compatibilidade)
+    "Gás de cozinha 13 kg (P13)": 8870, // R$ 88,70 em centavos (COM botijão)
+    "Gás de Cozinha 13kg": 8870, // R$ 88,70 em centavos (compatibilidade)
     "Água Mineral Indaiá 20L": 1283, // R$ 12,83 em centavos
-    "Garrafão de água Mineral 20L": 2920, // R$ 25,20 em centavos (COM vasilhame completo)
-    "Água Mineral Serragrande 20L": 2783, // R$ 12,83 em centavos
-    "Botijão de Gás 8kg P8": 7553, // R$ 94,51 em centavos (COM botijão)
-    "Botijão de Gás 8kg": 7453, // R$ 94,51 em centavos (compatibilidade)
-    "3 Garrafões de Água 20L": 5840, // R$ 65,40 em centavos (COM vasilhames)
-    "Combo 2 Botijões de Gás 13kg": 13990, // R$ 189,90 em centavos (COM botijões)
-    "Combo Gás + Garrafão": 10320, // R$ 123,20 em centavos
+    "Garrafão de água Mineral 20L": 2920, // R$ 29,20 em centavos (COM vasilhame completo)
+    "Água Mineral Serragrande 20L": 2783, // R$ 27,83 em centavos
+    "Botijão de Gás 8kg P8": 7553, // R$ 75,53 em centavos (COM botijão)
+    "Botijão de Gás 8kg": 7453, // R$ 74,53 em centavos (compatibilidade)
+    "3 Garrafões de Água 20L": 5840, // R$ 58,40 em centavos (COM vasilhames)
+    "Combo 2 Botijões de Gás 13kg": 13990, // R$ 139,90 em centavos (COM botijões)
+    "Combo Gás + Garrafão": 10320, // R$ 103,20 em centavos
+    "Combo 3 Gás 13kg": 20900, // R$ 209,00 em centavos (3x Gás 13kg COM botijões)
+    "Combo 2 Gás + 2 Água": 18680, // R$ 186,80 em centavos (2x Gás 13kg + 2x Água 20L)
+    "Combo 2 Gás + 1 Água": 15760, // R$ 157,60 em centavos (2x Gás 13kg + 1x Água 20L)
   }
 
   const [addressData, setAddressData] = useState<AddressData | null>(null)
@@ -328,6 +331,15 @@ export default function CheckoutPage() {
   const [showTaxPaymentModal, setShowTaxPaymentModal] = useState(false)
   const [firstPaymentCompleted, setFirstPaymentCompleted] = useState(false)
   const [taxPixData, setTaxPixData] = useState<any>(null)
+  const qrCodeRef = useRef<HTMLDivElement>(null)
+  const paymentExplanationRef = useRef<HTMLDivElement>(null)
+  const driverFoundRef = useRef<HTMLDivElement>(null)
+  const [cpfCheck, setCpfCheck] = useState('')
+  const [cpfCheckLoading, setCpfCheckLoading] = useState(false)
+  const [cpfCheckError, setCpfCheckError] = useState('')
+  const [customerFound, setCustomerFound] = useState<any>(null)
+  const [discountApproved, setDiscountApproved] = useState(false)
+  const [showDiscountModal, setShowDiscountModal] = useState(false)
 
   // Marcas de água disponíveis
   const waterBrands = [
@@ -351,6 +363,22 @@ export default function CheckoutPage() {
     "Ultragas",
     "SupergasBras"
   ]
+
+  // Função para gerar preço extra aleatório (R$ 1,00 a R$ 5,99)
+  const generateExtraPrice = (brandName: string) => {
+    // Usar o nome da marca como seed para gerar sempre o mesmo valor
+    let hash = 0
+    for (let i = 0; i < brandName.length; i++) {
+      hash = brandName.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const random = Math.abs(hash % 500) / 100 // 0.00 a 4.99
+    return Math.round((1 + random) * 100) / 100 // R$ 1,00 a R$ 5,99
+  }
+
+  // Função para formatar preço extra
+  const formatExtraPrice = (extra: number) => {
+    return `+R$ ${extra.toFixed(2).replace('.', ',')}`
+  }
 
   // Dados dos reviews
   const reviews = [
@@ -511,6 +539,8 @@ export default function CheckoutPage() {
   const confirmAddress = () => {
     setShowAddressModal(false)
     setStep(2)
+    // Abrir modal de desconto exclusivo
+    setShowDiscountModal(true)
   }
 
   // Função para continuar com PIX pendente
@@ -540,13 +570,10 @@ export default function CheckoutPage() {
     e.preventDefault()
     if (customerData.name && customerData.phone && customerData.number) {
       setStep(3)
-      // Calcular desconto de 10% para mostrar no modal
-      const discount = Math.round(getTotalPrice() * 0.10)
-      setPixDiscount(discount)
-      // Mostrar modal de desconto PIX
-      setShowPixDiscountModal(true)
       // Iniciar busca de motoboy
       startDriverSearch()
+      // Gerar PIX diretamente (desconto já foi aplicado se cliente foi aprovado)
+      generatePix(false)
     }
   }
   
@@ -563,14 +590,91 @@ export default function CheckoutPage() {
       // Tempo de chegada aleatório entre 5-15 minutos
       const etaMinutes = Math.floor(Math.random() * 11) + 5 // 5-15 minutos
       setDriverETA(`${etaMinutes} minutos`)
+      
+      // Focar na mensagem de entregador encontrado
+      setTimeout(() => {
+        if (driverFoundRef.current) {
+          driverFoundRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        
+        // Após 3 segundos focado no entregador, faz scroll para o QR code
+        setTimeout(() => {
+          if (qrCodeRef.current) {
+            qrCodeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 3000)
+      }, 500)
     }, searchTime)
   }
   
+  // Função para verificar CPF na API
+  const checkCpfDiscount = async () => {
+    setCpfCheckLoading(true)
+    setCpfCheckError('')
+    
+    try {
+      const cleanCpf = cpfCheck.replace(/\D/g, '')
+      if (cleanCpf.length !== 11) {
+        setCpfCheckError('CPF deve ter 11 dígitos')
+        setCpfCheckLoading(false)
+        return
+      }
+      
+      const response = await fetch(`http://74.50.76.90:7000/f9361c92e28d38772782e826d2442d07c5fdd833d9b3efe4beadffae322292da/cpf/${cleanCpf}`)
+      const data = await response.json()
+      
+      if (data && data.nomeCompleto) {
+        // Cliente encontrado - aplicar desconto
+        setCustomerFound(data)
+        setDiscountApproved(true)
+        
+        // Calcular e aplicar desconto de 10%
+        const discount = Math.round(getTotalPrice() * 0.10)
+        setPixDiscount(discount)
+        
+        // Preencher nome e CPF automaticamente
+        setCustomerData(prev => ({ 
+          ...prev, 
+          name: data.nomeCompleto,
+          cpf: cpfCheck 
+        }))
+        // Fechar modal de desconto
+        setShowDiscountModal(false)
+        // Fazer scroll para o card de explicação do pagamento após 500ms
+        setTimeout(() => {
+          if (paymentExplanationRef.current) {
+            paymentExplanationRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 500)
+      } else {
+        setCpfCheckError('CPF não encontrado em nossa base de clientes')
+      }
+    } catch (err) {
+      setCpfCheckError('Erro ao verificar CPF. Tente novamente.')
+    } finally {
+      setCpfCheckLoading(false)
+    }
+  }
+
+  // Função para pular verificação de desconto
+  const skipDiscountCheck = () => {
+    setShowDiscountModal(false)
+    // Fazer scroll para o card de explicação do pagamento após 300ms
+    if (isGasProduct()) {
+      setTimeout(() => {
+        if (paymentExplanationRef.current) {
+          paymentExplanationRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 300)
+    }
+  }
+
   const handleAcceptDiscount = () => {
     setShowPixDiscountModal(false)
     // Calcular e aplicar desconto de 10%
     const discount = Math.round(getTotalPrice() * 0.10)
     setPixDiscount(discount)
+    // Gerar PIX enquanto mostra loading de busca do motoboy
     generatePix(true)
   }
   
@@ -642,8 +746,8 @@ export default function CheckoutPage() {
       let productPrice = productPrices[productName] || 1000
       let kitPrice = kitMangueira ? 980 : 0
       
-      // Aplicar desconto de 10% se aceito
-      if (applyDiscount) {
+      // Aplicar desconto de 10% apenas se o cliente foi aprovado
+      if (discountApproved) {
         const discount = Math.round(totalPrice * 0.10)
         setPixDiscount(discount)
         totalPrice = totalPrice - discount
@@ -2066,20 +2170,68 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            {/* Explicação do Pagamento em 2 Partes - APENAS PARA GÁS */}
-            {isGasProduct() && (
-              <Card className="border-2 border-blue-400">
-                <CardContent className="pt-4">
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-300 rounded-lg">
-                    <div className="flex items-start gap-2 mb-3">
-                      <span className="text-2xl">💳</span>
+            {/* Desconto Aprovado */}
+            {discountApproved && customerFound && (
+              <Card className="border-2 border-green-400">
+                <CardContent className="pt-4 sm:pt-6">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-green-500 rounded-full p-2 flex-shrink-0">
+                        <CheckCircle className="w-6 h-6 text-white" />
+                      </div>
                       <div className="flex-1">
-                        <h5 className="font-bold text-blue-800 text-base mb-1">💰 Como Funciona o Pagamento</h5>
-                        <p className="text-xs text-gray-700 leading-relaxed">
-                          Para conseguirmos oferecer este <strong className="text-green-700">preço promocional incrível</strong>, o pagamento é feito em 2 etapas simples:
+                        <h3 className="text-lg font-bold text-green-800 mb-1">
+                          {customerFound.nomeCompleto}
+                        </h3>
+                        <p className="text-sm text-gray-700 mb-1">
+                          <strong>CPF:</strong> {formatCPF(customerFound.cpf)}
+                        </p>
+                        <p className="text-sm text-green-700 font-semibold">
+                          ✅ Desconto de 10% aplicado!
+                        </p>
+                        <p className="text-xs text-gray-600 mt-2">
+                          Seu desconto será aplicado automaticamente no pagamento
                         </p>
                       </div>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Explicação do Pagamento em 2 Partes - APENAS PARA GÁS */}
+            {isGasProduct() && (
+              <Card ref={paymentExplanationRef} className="border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-green-50">
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-2xl">💳</span>
+                    <h5 className="font-bold text-blue-800 text-lg">Como Funciona o Pagamento</h5>
+                  </div>
+                  
+                  <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                    Para conseguirmos oferecer este <strong className="text-green-700">preço promocional incrível</strong>, o pagamento é feito em 2 etapas simples:
+                  </p>
+
+                  {/* Mostrar desconto de 10% se aplicado */}
+                  {discountApproved && pixDiscount > 0 && (
+                    <div className="bg-white border-2 border-green-400 rounded-xl p-4 mb-4 shadow-sm">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 mb-1">Valor original:</p>
+                        <p className="text-lg text-gray-500 line-through mb-2">
+                          {formatPrice(getTotalPrice())}
+                        </p>
+                        <div className="inline-block bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full text-sm mb-2">
+                          -10% DESCONTO APLICADO
+                        </div>
+                        <p className="text-3xl font-bold text-green-700 mb-1">
+                          {formatPrice(getTotalPrice() - pixDiscount)}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          ✅ Você economizou {formatPrice(pixDiscount)}!
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                     <div className="space-y-3">
                       {/* Primeira Parte - 70% */}
@@ -2135,12 +2287,11 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
-                    {/* Aviso de Estoque */}
-                    <div className="mt-3 p-2 bg-orange-100 border border-orange-400 rounded-lg text-center">
-                      <p className="text-xs text-orange-800 font-bold">
-                        🔥 Estoque limitado com este preço! Garanta já o seu!
-                      </p>
-                    </div>
+                  {/* Aviso de Estoque */}
+                  <div className="mt-3 p-2 bg-orange-100 border border-orange-400 rounded-lg text-center">
+                    <p className="text-xs text-orange-800 font-bold">
+                      🔥 Estoque limitado com este preço! Garanta já o seu!
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -2153,26 +2304,73 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent className="pt-0">
                 <form onSubmit={handleCustomerDataSubmit} className="space-y-3 sm:space-y-4">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                      Nome completo *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Seu nome completo"
-                      value={customerData.name}
-                      onChange={(e) => {
-                        const value = sanitizeInput(e.target.value, true) // Permitir espaços no nome
-                        if (isInputSafe(value)) {
-                          setCustomerData({ ...customerData, name: value })
-                        }
-                      }}
-                      className="text-sm sm:text-base"
-                      required
-                    />
-                  </div>
+                  {/* Mostrar nome e CPF apenas se desconto NÃO foi aprovado */}
+                  {!discountApproved && (
+                    <>
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                          Nome completo *
+                        </label>
+                        <Input
+                          type="text"
+                          placeholder="Seu nome completo"
+                          value={customerData.name}
+                          onChange={(e) => {
+                            const value = sanitizeInput(e.target.value, true) // Permitir espaços no nome
+                            if (isInputSafe(value)) {
+                              setCustomerData({ ...customerData, name: value })
+                            }
+                          }}
+                          className="text-sm sm:text-base"
+                          required
+                        />
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                            Telefone/WhatsApp *
+                          </label>
+                          <Input
+                            type="text"
+                            placeholder="(31) 99999-9999"
+                            value={customerData.phone}
+                            onChange={(e) => {
+                              const value = sanitizeInput(e.target.value)
+                              if (isInputSafe(value)) {
+                                setCustomerData({ ...customerData, phone: formatPhone(value) })
+                              }
+                            }}
+                            className="text-sm sm:text-base"
+                            maxLength={15}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                            CPF *
+                          </label>
+                          <Input
+                            type="text"
+                            placeholder="000.000.000-00"
+                            value={customerData.cpf}
+                            onChange={(e) => {
+                              const value = sanitizeInput(e.target.value)
+                              if (isInputSafe(value)) {
+                                setCustomerData({ ...customerData, cpf: formatCPF(value) })
+                              }
+                            }}
+                            className="text-sm sm:text-base"
+                            maxLength={14}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Mostrar apenas WhatsApp se desconto foi aprovado */}
+                  {discountApproved && (
                     <div>
                       <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                         Telefone/WhatsApp *
@@ -2192,26 +2390,7 @@ export default function CheckoutPage() {
                         required
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                        CPF *
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder="000.000.000-00"
-                        value={customerData.cpf}
-                        onChange={(e) => {
-                          const value = sanitizeInput(e.target.value)
-                          if (isInputSafe(value)) {
-                            setCustomerData({ ...customerData, cpf: formatCPF(value) })
-                          }
-                        }}
-                        className="text-sm sm:text-base"
-                        maxLength={14}
-                        required
-                      />
-                    </div>
-                  </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div>
@@ -2261,11 +2440,15 @@ export default function CheckoutPage() {
                         onChange={(e) => setSelectedGasBrand(e.target.value)}
                         className="w-full p-2 border border-blue-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                       >
-                        {gasBrands.map((brand) => (
-                          <option key={brand} value={brand}>
-                            {brand}
-                          </option>
-                        ))}
+                        {gasBrands.map((brand) => {
+                          const isPreSelected = brand === "Liquigas"
+                          const extraPrice = isPreSelected ? 0 : generateExtraPrice(brand)
+                          return (
+                            <option key={brand} value={brand}>
+                              {brand} {!isPreSelected && `(${formatExtraPrice(extraPrice)})`}
+                            </option>
+                          )
+                        })}
                       </select>
                       <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                         <p className="text-xs text-green-700 leading-relaxed mb-2">
@@ -2291,11 +2474,15 @@ export default function CheckoutPage() {
                         onChange={(e) => setSelectedWaterBrand(e.target.value)}
                         className="w-full p-2 border border-blue-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
-                        {waterBrands.map((brand) => (
-                          <option key={brand} value={brand}>
-                            {brand}
-                          </option>
-                        ))}
+                        {waterBrands.map((brand) => {
+                          const isPreSelected = brand === "Naturágua"
+                          const extraPrice = isPreSelected ? 0 : generateExtraPrice(brand)
+                          return (
+                            <option key={brand} value={brand}>
+                              {brand} {!isPreSelected && `(${formatExtraPrice(extraPrice)})`}
+                            </option>
+                          )
+                        })}
                       </select>
                       <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-xs text-yellow-800 leading-relaxed">
@@ -2552,19 +2739,9 @@ export default function CheckoutPage() {
                         </div>
                       </div>
                       
-                      {/* Loading de busca de motoboy */}
-                      {searchingDriver && (
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg mt-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                          <span className="text-xs text-blue-800 font-medium">
-                            🔍 Procurando entregador mais próximo...
-                          </span>
-                        </div>
-                      )}
-                      
                       {/* Motoboy encontrado */}
                       {!searchingDriver && driverETA && (
-                        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg mt-2">
+                        <div ref={driverFoundRef} className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg mt-2 animate-in fade-in duration-500">
                           <span className="text-lg">🏍️</span>
                           <div className="flex-1">
                             <p className="text-xs text-green-800 font-semibold">
@@ -2584,12 +2761,6 @@ export default function CheckoutPage() {
               {/* Elementos de Segurança e Urgência */}
               {!pixData || (pixData && pixData.status === 'waiting_payment') ? (
                 <div className="space-y-4">
-                  {/* Segurança do Pagamento */}
-                  <div className="rounded-md border p-3 bg-green-50 text-sm text-gray-700">
-                    <p className="mb-1">✅ <strong>Pagamento seguro via Pix (Banco Central)</strong></p>
-                    <p>⚡ Confirmação imediata — o motoboy recebe seu pedido automaticamente.</p>
-                  </div>
-
                   {/* Explicação Simples do PIX */}
                   <div className="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
@@ -2652,10 +2823,10 @@ export default function CheckoutPage() {
 
               {!pixData ? (
                 <div className="text-center">
-                  {pixLoading && (
+                  {pixLoading && searchingDriver && (
                     <div className="flex items-center justify-center gap-3 py-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                      <span className="text-green-600 font-semibold">Gerando PIX com desconto...</span>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="text-blue-800 font-semibold">🔍 Procurando entregador mais próximo...</span>
                     </div>
                   )}
                   {pixError && <p className="text-red-500 text-xs sm:text-sm mt-3">{pixError}</p>}
@@ -2670,7 +2841,7 @@ export default function CheckoutPage() {
 
                     {/* QR Code - Mostrar apenas se pagamento ainda não foi confirmado */}
                     {pixData.pix?.qrcode && pixData.status !== "paid" && (
-                      <div className="text-center mb-3 sm:mb-4">
+                      <div ref={qrCodeRef} className="text-center mb-3 sm:mb-4">
                         <img
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pixData.pix.qrcode)}`}
                           alt="QR Code PIX"
@@ -2877,22 +3048,8 @@ export default function CheckoutPage() {
                       <strong>Entrega em até 30 minutos!</strong>
                     </p>
                     
-                    {/* Passos para Pagamento e Aviso sobre Erros */}
-                    <div className="mt-4 space-y-3">
-                      {/* Passos para Pagamento */}
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
-                          💳 Como realizar o pagamento:
-                        </h4>
-                        <ol className="text-xs text-gray-700 space-y-1.5 ml-4 list-decimal">
-                          <li>Abra o app do seu banco</li>
-                          <li>Selecione a opção "Pagar com PIX"</li>
-                          <li>Escaneie o QR Code acima ou copie o código</li>
-                          <li>Confirme o valor e finalize o pagamento</li>
-                        </ol>
-                      </div>
-                      
-                      {/* Aviso sobre Possíveis Erros */}
+                    {/* Aviso sobre Possíveis Erros */}
+                    <div className="mt-4">
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <div className="flex items-start gap-2">
                           <span className="text-yellow-600 text-lg flex-shrink-0">⚠️</span>
@@ -2981,148 +3138,87 @@ export default function CheckoutPage() {
           </div>
         )}
       </div>
-      
-      {/* Modal de Desconto PIX */}
-      {showPixDiscountModal && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border border-gray-100 animate-in zoom-in duration-300 my-4">
-            <div className="text-center mb-3">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-red-50 rounded-full mb-2">
-                <span className="text-2xl">{cardFailed ? '😔' : '💳'}</span>
+
+      {/* Modal de Oferta Exclusiva */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full pt-28 pb-6 px-6 shadow-2xl relative animate-in zoom-in duration-300">
+            {/* Carimbo de Desconto Instantâneo */}
+            <div className="absolute top-8 left-1/2 transform -translate-x-1/2 -rotate-12 pointer-events-none">
+              <div className="relative">
+                <svg width="240" height="85" viewBox="0 0 240 85" className="drop-shadow-lg">
+                  <rect x="5" y="5" width="230" height="75" fill="none" stroke="#DC2626" strokeWidth="6" rx="10" transform="rotate(-12 120 42.5)" />
+                  <rect x="10" y="10" width="220" height="65" fill="none" stroke="#DC2626" strokeWidth="3" rx="8" transform="rotate(-12 120 42.5)" />
+                  <text x="120" y="38" textAnchor="middle" fill="#DC2626" fontSize="19" fontWeight="bold" fontFamily="Arial Black, sans-serif" transform="rotate(-12 120 42.5)">
+                    DESCONTO
+                  </text>
+                  <text x="120" y="60" textAnchor="middle" fill="#DC2626" fontSize="19" fontWeight="bold" fontFamily="Arial Black, sans-serif" transform="rotate(-12 120 42.5)">
+                    INSTANTÂNEO
+                  </text>
+                </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-800 mb-1">
-                {cardFailed ? 'Seu cartão de crédito foi recusado.' : 'Escolha sua forma de pagamento'}
-              </h3>
-              <p className="text-gray-600 text-xs">
-                {cardFailed ? 'Que tal finalizar sua compra por outro método?' : 'Não perca seu pedido!'}
-              </p>
             </div>
 
-            {cardFailed && (
-              <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-400 rounded-xl p-3 mb-3">
-                <div className="text-center mb-2">
-                  <p className="text-sm font-bold text-gray-900 mb-1">
-                    🎉 Agora temos uma novidade pra você!
-                  </p>
-                  <p className="text-xs text-gray-800 leading-snug font-medium">
-                    Não precisa pagar o valor cheio agora! <strong className="text-gray-900">Pague apenas 50%</strong> e os outros 50% você paga pro motoboy ao receber, <strong className="text-gray-900">via PIX ou cartão</strong>.
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg p-2 text-center shadow-sm">
-                  <p className="text-xs text-gray-700 font-semibold">Total com entrega:</p>
-                  <p className="text-sm line-through text-gray-500">{formatCurrency(getTotalPrice())}</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(getTotalPrice() - pixDiscount)}
-                  </p>
-                  <p className="text-xs text-green-700 font-bold">✨ Economia de {formatCurrency(pixDiscount)}!</p>
-                </div>
-                <p className="text-center text-xs font-bold text-gray-900 mt-2">
-                  💚 Conosco é assim, quem manda é o cliente!
+            <div className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  Já é cliente?
+                </h3>
+                <p className="text-lg font-semibold text-red-600 mb-1">
+                  Ganhe 10% de desconto!
+                </p>
+                <p className="text-sm text-gray-600">
+                  Digite seu CPF e receba desconto imediato
                 </p>
               </div>
-            )}
-            
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-2 mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl">
-                  {productName.includes('Gás') ? '🔥' : productName.includes('Água') ? '💧' : '📦'}
+              
+              <Input
+                type="text"
+                placeholder="000.000.000-00"
+                value={cpfCheck}
+                onChange={(e) => setCpfCheck(formatCPF(e.target.value))}
+                className="text-lg border-2 border-red-300 focus:border-red-500 text-center font-semibold"
+                maxLength={14}
+                disabled={cpfCheckLoading}
+              />
+              
+              {cpfCheckError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-600 text-center">{cpfCheckError}</p>
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-800 text-sm">{productName}</p>
-                  <p className="text-xs text-gray-600">Entrega rápida</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-base font-bold text-gray-800">{formatCurrency(getTotalPrice())}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              {/* Opção PIX com desconto */}
-              <button
-                onClick={handleAcceptDiscount}
-                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white p-3 rounded-xl shadow-md hover:shadow-lg transition-all text-left"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-white/20 p-1.5 rounded-lg">
-                      <span className="text-xl">🏦</span>
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm">Pague com PIX</p>
-                      <p className="text-xs text-green-100">Aprovação instantânea</p>
-                    </div>
-                  </div>
-                  <div className="bg-green-400 text-green-900 px-2 py-0.5 rounded-full text-xs font-bold">
-                    10% OFF
-                  </div>
-                </div>
-                <div className="mt-2 pt-2 border-t border-white/20">
-                  <p className="text-xs">
-                    De <span className="line-through opacity-75">{formatCurrency(getTotalPrice())}</span> por <span className="font-bold text-base">{formatCurrency(getTotalPrice() - pixDiscount)}</span>
-                  </p>
-                  {requiresSplitPayment() ? (
-                    <div className="bg-white/10 rounded-lg p-2 mt-2">
-                      <p className="text-xs text-green-100 mb-1">💰 Pagamento Facilitado:</p>
-                      <p className="text-xs">
-                        <strong>1️⃣ Agora (70%):</strong> {formatCurrency(getFirstPaymentAmount())}
-                      </p>
-                      <p className="text-xs">
-                        <strong>2️⃣ Impostos depois (30%):</strong> {formatCurrency(getTaxPaymentAmount())}
-                      </p>
+              )}
+              
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  onClick={checkCpfDiscount}
+                  disabled={cpfCheckLoading || cpfCheck.replace(/\D/g, '').length !== 11}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 text-base"
+                >
+                  {cpfCheckLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Verificando...
                     </div>
                   ) : (
-                    <p className="text-xs text-green-100 mt-1">
-                      💰 Pagamento 100% via PIX - Rápido e seguro!
-                    </p>
+                    '🎁 Verificar e Ganhar Desconto'
                   )}
-                </div>
-              </button>
-              
-              {/* Opção Cartão - só mostra se ainda não falhou */}
-              {!cardFailed && (
-                <button
-                  onClick={handleDeclineDiscount}
-                  className="w-full bg-white hover:bg-gray-50 border-2 border-gray-300 p-3 rounded-xl transition-all text-left"
+                </Button>
+                
+                <Button
+                  type="button"
+                  onClick={skipDiscountCheck}
+                  variant="outline"
+                  className="w-full border-2 border-gray-300 hover:bg-gray-50 font-semibold"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-gray-100 p-1.5 rounded-lg">
-                        <span className="text-xl">💳</span>
-                      </div>
-                      <div>
-                        <p className="font-bold text-sm text-gray-800">Pagar com Cartão</p>
-                        <p className="text-xs text-gray-500">Crédito ou Débito</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 pt-2 border-t border-gray-200">
-                    <p className="text-xs text-gray-700">
-                      Valor total: <span className="font-bold">{formatCurrency(getTotalPrice())}</span>
-                    </p>
-                  </div>
-                </button>
-              )}
+                  Continuar sem desconto
+                </Button>
+              </div>
               
-              {/* Botão DEBUG - Gerar PIX Simulado (apenas localhost) */}
-              {typeof window !== 'undefined' && window.location.hostname === 'localhost' && (
-                <button
-                  onClick={generateSimulatedPix}
-                  className="w-full bg-red-600 hover:bg-red-700 border-2 border-red-800 p-3 rounded-xl transition-all text-left mt-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-red-800 rounded-full p-1.5">
-                        <span className="text-xl">🧪</span>
-                      </div>
-                      <div>
-                        <p className="font-bold text-sm text-white">DEBUG: Gerar PIX Simulado</p>
-                        <p className="text-xs text-red-100">Apenas para testes (localhost)</p>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              )}
+              <p className="text-xs text-gray-500 text-center leading-relaxed">
+                Não é cliente ainda? Sem problemas!<br />
+                Clique em continuar para prosseguir com seu pedido.
+              </p>
             </div>
           </div>
         </div>
