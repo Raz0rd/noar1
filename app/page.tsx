@@ -781,24 +781,6 @@ export default function HomePage() {
       {/* Header Fixo de Localização */}
       <LocationHeader />
 
-      {/* Banner de Aviso sobre Golpes */}
-      <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white py-3 px-4 shadow-lg">
-        <div className="container mx-auto">
-          <div className="flex items-center justify-center gap-3 text-center">
-            <span className="text-2xl flex-shrink-0">⚠️</span>
-            <div className="flex-1">
-              <p className="text-sm sm:text-base font-bold mb-1">
-                ATENÇÃO: Cuidado com Golpes!
-              </p>
-              <p className="text-xs sm:text-sm">
-                Muitos golpes estão sendo aplicados usando nosso nome. Verifique sempre a URL oficial: 
-                <span className="font-bold ml-1 underline">https://www.distribuidoraconfigas.store</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Header */}
       <header className="bg-white shadow-md sticky top-0 z-40">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
