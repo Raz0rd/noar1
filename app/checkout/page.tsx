@@ -1190,12 +1190,21 @@ export default function CheckoutPage() {
       const conversionValueBRL = value / 100; // Converter centavos para reais
       
       // Dispara conversão de Compra com valor e transaction_id
+      console.log(`📊 [GOOGLE ADS] Enviando conversão:`, {
+        send_to: conversionTag,
+        value: conversionValueBRL,
+        currency: 'BRL',
+        transaction_id: transactionId
+      })
+      
       window.gtag('event', 'conversion', {
         'send_to': conversionTag,
         'value': conversionValueBRL,
         'currency': 'BRL',
         'transaction_id': transactionId
       });
+      
+      console.log(`✅ [GOOGLE ADS] Conversão enviada com sucesso!`)
       
       // Marcar que conversão foi reportada
       setConversionReported(true);
@@ -1700,12 +1709,16 @@ export default function CheckoutPage() {
           
           if (response.ok) {
             success = true
+            const result = await response.json()
+            console.log(`✅ [UTMIFY] ${status.toUpperCase()} enviado com sucesso!`, result)
             const key = status === 'waiting_payment' ? 'pending' : 'paid'
             const newState = { ...utmifySent, [key]: true }
             setUtmifySent(newState)
             // Salvar no localStorage
             localStorage.setItem('utmify-sent', JSON.stringify(newState))
           } else {
+            const errorText = await response.text()
+            console.error(`❌ [UTMIFY] Tentativa ${attempt}/${maxAttempts} falhou:`, response.status, errorText)
             if (attempt < maxAttempts) {
               await new Promise(resolve => setTimeout(resolve, 2000))
             }
