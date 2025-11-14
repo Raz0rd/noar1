@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
           },
           products: [{
             id: `product-${transactionId}-0`,
-            name: "GBnewTno",
+            name: "OFG2",
             planId: null,
             planName: null,
             quantity: 1,
