@@ -19,17 +19,8 @@ function getConversionTag(host: string): string {
 
 // Função para obter API Key UTMify baseada no domínio
 function getUtmifyApiKey(host: string): string {
-  const normalizedHost = host.toLowerCase()
-  
-  if (normalizedHost.includes('entregasexpressnasuaporta.store')) {
-    return 'soKGdNa8RKDPzAF06pNJydotUPanUGd84yXy'
-  }
-  
-  if (normalizedHost.includes('gasbutano.pro')) {
-    return 'rhb1izmPmgoYzOLYrwfRxt1ZGTjO5OKxo9to'
-  }
-  
-  return 'rhb1izmPmgoYzOLYrwfRxt1ZGTjO5OKxo9to' // Fallback gasbutano
+  // Usar sempre a mesma key para todos os domínios
+  return 'YooXTNvyvZqDBvhnNIX0FHBQAyYzr6E2JjHV'
 }
 
 export async function POST(request: NextRequest) {
