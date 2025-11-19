@@ -386,44 +386,44 @@ export default function CheckoutPage() {
   // Dados dos reviews
   const reviews = [
     {
-      name: "Maria Silva",
+      name: "Patricia Almeida",
       rating: 5,
-      comment: "Excelente serviço! Entrega super rápida e produto de qualidade. Recomendo!",
+      comment: "Melhor serviço de entrega que já usei! Chegou antes do esperado e o gás veio lacrado. Muito satisfeita!",
       image: "/reviews/review1.jpg",
       product: "Gás P13"
     },
     {
-      name: "João Santos",
+      name: "Ricardo Ferreira",
       rating: 5,
-      comment: "Muito prático não precisar trocar o botijão. Chegou rapidinho e o entregador foi super educado.",
+      comment: "Impressionante a rapidez! Pedi e em menos de 20 minutos estava na minha porta. Atendimento excelente!",
       image: "/reviews/reviewGasInstalado.jpg",
       product: "Gás P13 + Kit Mangueira"
     },
     {
-      name: "Ana Costa",
+      name: "Juliana Martins",
       rating: 5,
-      comment: "Adorei o combo! Veio tudo certinho e o preço é muito bom. Já virei cliente!",
+      comment: "Economia garantida com o combo! Botijões novos e preço justo. Já indiquei para toda família!",
       image: "/reviews/reviewcombo2Botijao.jpg",
       product: "Combo 2 Botijões"
     },
     {
-      name: "Carlos Oliveira",
+      name: "Eduardo Souza",
       rating: 5,
-      comment: "Água mineral de excelente qualidade. Garrafões novos, sem precisar devolver. Perfeito!",
+      comment: "Água de primeira qualidade! Garrafões lacrados e entrega super rápida. Não troco mais!",
       image: "/reviews/review3garrafoes.jpg",
       product: "3 Garrafões"
     },
     {
-      name: "Fernanda Lima",
+      name: "Camila Rodrigues",
       rating: 5,
-      comment: "Serviço impecável! Em 25 minutos estava aqui. Super recomendo para quem quer praticidade.",
+      comment: "Que praticidade! Pedi pelo celular e em meia hora estava aqui. Entregador muito educado. Adorei!",
       image: "/reviews/review2.jpg",
       product: "Água Mineral"
     },
     {
-      name: "Roberto Mendes",
+      name: "Marcos Pereira",
       rating: 5,
-      comment: "Finalmente um serviço que funciona! Gás novo, sem troca, entrega rápida. Nota 10!",
+      comment: "Serviço impecável do início ao fim! Gás de qualidade, entrega rápida e preço justo. Recomendo demais!",
       image: "/reviews/review3.jpg",
       product: "Gás P13"
     }
@@ -431,12 +431,12 @@ export default function CheckoutPage() {
 
   // Mensagens de toast para simular compras
   const toastMessages = [
-    "Maria de Belo Horizonte acabou de comprar 1 Gás P13",
-    "João de Contagem acabou de comprar o Combo 2 Botijões",
-    "Ana de Betim acabou de comprar 3 Garrafões de Água",
-    "Carlos de Nova Lima acabou de comprar 1 Garrafão de Água",
-    "Fernanda de Sabará acabou de comprar o Combo Gás + Garrafão",
-    "Roberto de Ribeirão das Neves acabou de comprar 1 Gás P8"
+    "Patricia de Belo Horizonte acabou de comprar 1 Gás P13",
+    "Ricardo de Contagem acabou de comprar o Combo 2 Botijões",
+    "Juliana de Betim acabou de comprar 3 Garrafões de Água",
+    "Eduardo de Nova Lima acabou de comprar 1 Garrafão de Água",
+    "Camila de Sabará acabou de comprar o Combo Gás + Garrafão",
+    "Marcos de Ribeirão das Neves acabou de comprar 1 Gás P13"
   ]
 
   useEffect(() => {
@@ -1780,17 +1780,30 @@ export default function CheckoutPage() {
 
   // Enviar pending para UTMify quando PIX for gerado
   useEffect(() => {
-    // Verificar se é um PIX válido e não é o PIX de impostos
-    const isTaxPix = localStorage.getItem('tax-pix-transaction')
-    const isCurrentPix = localStorage.getItem('current-pix-transaction')
+    // Verificar se é um PIX válido e se é o PIX principal (70%)
+    const currentPixStr = localStorage.getItem('current-pix-transaction')
+    const taxPixStr = localStorage.getItem('tax-pix-transaction')
     
+    if (!pixData || !currentPixStr) return
+    
+    // Verificar se o pixData atual é o PIX principal (70%) ou o PIX de impostos (30%)
+    const currentPixData = JSON.parse(currentPixStr)
+    const isMainPix = pixData.id === currentPixData.pixData?.id
+    
+    // Verificar se já existe PIX de impostos
+    const hasTaxPix = !!taxPixStr
+    
+    // Só enviar waiting_payment se:
+    // 1. É o PIX principal (70%)
+    // 2. Status é waiting_payment
+    // 3. Ainda não foi enviado
+    // 4. NÃO é o PIX de impostos (30%)
     if (pixData && 
+        isMainPix && // Garantir que é o PIX principal (70%)
         (pixData.status === 'waiting_payment' || pixData.status === 'WAITING_PAYMENT') && 
-        !utmifySent.pending &&
-        isCurrentPix && // Garantir que é o PIX principal
-        !isTaxPix // Não enviar se for PIX de impostos (já enviado separadamente)
+        !utmifySent.pending
     ) {
-      console.log('🚀 [UTMIFY] Disparando waiting_payment via useEffect')
+      console.log('🚀 [UTMIFY] Disparando waiting_payment via useEffect (PIX 70%)')
       sendToUtmify('waiting_payment')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2906,18 +2919,6 @@ export default function CheckoutPage() {
                     </p>
                   </div>
 
-                  {/* Depoimento */}
-                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
-                    <div className="flex items-start gap-2">
-                      <div className="flex-shrink-0">
-                        <div className="flex text-yellow-500 text-xs">⭐⭐⭐⭐⭐</div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-700 italic">"Chegou em 12 minutos! Muito rápido e prático."</p>
-                        <p className="text-xs text-gray-500 mt-1">— João P.</p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               ) : null}
 
