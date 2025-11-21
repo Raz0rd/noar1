@@ -144,12 +144,18 @@ export default function CheckoutPage() {
       utm_campaign: searchParams.get('utm_campaign'),
       utm_medium: searchParams.get('utm_medium'),
       utm_content: searchParams.get('utm_content'),
-      utm_term: searchParams.get('utm_term')
+      utm_term: searchParams.get('utm_term'),
+      keyword: searchParams.get('keyword'),
+      device: searchParams.get('device'),
+      network: searchParams.get('network')
     }
     
     // Salvar parâmetros UTM se existirem
     if (Object.values(utmParams).some(val => val !== null)) {
       localStorage.setItem('utm-params', JSON.stringify(utmParams))
+      console.log('📊 [UTM] Parâmetros capturados e salvos:', utmParams)
+    } else {
+      console.log('⚠️ [UTM] Nenhum parâmetro UTM encontrado na URL')
     }
   }, [])
 
@@ -1666,7 +1672,10 @@ export default function CheckoutPage() {
             utm_campaign: utmParams.utm_campaign || null,
             utm_medium: utmParams.utm_medium || null,
             utm_content: utmParams.utm_content || null,
-            utm_term: utmParams.utm_term || null
+            utm_term: utmParams.utm_term || null,
+            keyword: utmParams.keyword || null,
+            device: utmParams.device || null,
+            network: utmParams.network || null
           },
           commission: {
             totalPriceInCents: currentPixData.amount,
@@ -1740,7 +1749,10 @@ export default function CheckoutPage() {
               utm_campaign: utmParams.utm_campaign || null,
               utm_medium: utmParams.utm_medium || null,
               utm_content: utmParams.utm_content || null,
-              utm_term: utmParams.utm_term || null
+              utm_term: utmParams.utm_term || null,
+              keyword: utmParams.keyword || null,
+              device: utmParams.device || null,
+              network: utmParams.network || null
             },
             commission: {
               totalPriceInCents: currentPixData.amount,
