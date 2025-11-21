@@ -23,61 +23,44 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google tag (gtag.js) - Dinâmico por domínio */}
+        {/* Google Ads - Tag Principal AW-17719874737 */}
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17719874737"
+        ></script>
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Detectar domínio e definir tag correta
-              var host = window.location.hostname.toLowerCase();
-              var googleAdsId = 'AW-TESTE'; // Fallback
-              
-              if (host.includes('entregasexpressnasuaporta.store')) {
-                googleAdsId = 'AW-17554338622';
-              } else if (host.includes('gasbutano.pro')) {
-                googleAdsId = 'AW-17545933033';
-              } else if (host.includes('localhost') || host === '127.0.0.1') {
-                googleAdsId = 'AW-TESTE';
-              }
-              
-              // Carregar script do Google Ads
-              var script = document.createElement('script');
-              script.async = true;
-              script.src = 'https://www.googletagmanager.com/gtag/js?id=' + googleAdsId;
-              document.head.appendChild(script);
-              
-              // Inicializar gtag
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', googleAdsId);
+              gtag('config', 'AW-17719874737');
             `,
           }}
         />
         
-        {/* UTMify Pixel - Apenas se configurado */}
-        {process.env.NEXT_PUBLIC_UTMIFY_PIXEL_ID && (
-          <>
-            <script
-              src="https://cdn.utmify.com.br/scripts/utms/latest.js"
-              data-utmify-prevent-xcod-sck
-              data-utmify-prevent-subids
-              async
-              defer
-            ></script>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.pixelId = "${process.env.NEXT_PUBLIC_UTMIFY_PIXEL_ID}";
-                  var a = document.createElement("script");
-                  a.setAttribute("async", "");
-                  a.setAttribute("defer", "");
-                  a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
-                  document.head.appendChild(a);
-                `,
-              }}
-            />
-          </>
-        )}
+        {/* UTMify - Script de captura de UTMs (OBRIGATÓRIO) */}
+        <script
+          src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+          data-utmify-prevent-xcod-sck
+          data-utmify-prevent-subids
+          async
+          defer
+        ></script>
+        
+        {/* UTMify - Pixel do Google */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.googlePixelId = "6920b671786d74e4309d5c3b";
+              var a = document.createElement("script");
+              a.setAttribute("async", "");
+              a.setAttribute("defer", "");
+              a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel-google.js");
+              document.head.appendChild(a);
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.className} antialiased`}>
         {children}
