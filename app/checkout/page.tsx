@@ -1189,27 +1189,91 @@ export default function CheckoutPage() {
     try {
       const conversionValueBRL = value / 100; // Converter centavos para reais
       
-      // Dispara conversão de Compra com valor e transaction_id
-      console.log(`📊 [GOOGLE ADS] Enviando conversão:`, {
-        send_to: conversionTag,
-        value: conversionValueBRL,
-        currency: 'BRL',
-        transaction_id: transactionId
-      })
+      // Recuperar parâmetros UTM do localStorage
+      const utmParamsStr = localStorage.getItem('utm-params')
+      const utmParams = utmParamsStr ? JSON.parse(utmParamsStr) : {}
       
-      window.gtag('event', 'conversion', {
+      // Preparar dados do cliente para Enhanced Conversions
+      const enhancedConversionData: any = {}
+      
+      // Email vem do pixData se disponível
+      if (pixData?.customer?.email) {
+        enhancedConversionData.email = pixData.customer.email
+      }
+      
+      if (customerData.phone) {
+        enhancedConversionData.phone_number = customerData.phone.replace(/\D/g, '')
+      }
+      
+      if (customerData.name) {
+        const nameParts = customerData.name.trim().split(' ')
+        enhancedConversionData.first_name = nameParts[0]
+        if (nameParts.length > 1) {
+          enhancedConversionData.last_name = nameParts.slice(1).join(' ')
+        }
+      }
+      
+      if (addressData) {
+        enhancedConversionData.address = {
+          city: addressData.localidade,
+          region: addressData.uf,
+          postal_code: addressData.cep?.replace(/\D/g, ''),
+          country: 'BR'
+        }
+      }
+      
+      // Montar payload de conversão otimizada
+      const conversionPayload: any = {
         'send_to': conversionTag,
         'value': conversionValueBRL,
         'currency': 'BRL',
         'transaction_id': transactionId
+      }
+      
+      // Adicionar Enhanced Conversion Data se disponível
+      if (Object.keys(enhancedConversionData).length > 0) {
+        conversionPayload.user_data = enhancedConversionData
+      }
+      
+      // Adicionar parâmetros UTM se disponíveis
+      if (utmParams.utm_source) conversionPayload.utm_source = utmParams.utm_source
+      if (utmParams.utm_medium) conversionPayload.utm_medium = utmParams.utm_medium
+      if (utmParams.utm_campaign) conversionPayload.utm_campaign = utmParams.utm_campaign
+      if (utmParams.utm_content) conversionPayload.utm_content = utmParams.utm_content
+      if (utmParams.utm_term) conversionPayload.utm_term = utmParams.utm_term
+      
+      // Dispara conversão otimizada
+      console.log(`📊 [GOOGLE ADS] Enviando conversão otimizada:`, {
+        send_to: conversionTag,
+        value: conversionValueBRL,
+        currency: 'BRL',
+        transaction_id: transactionId,
+        has_enhanced_data: Object.keys(enhancedConversionData).length > 0,
+        has_utm_params: Object.keys(utmParams).length > 0,
+        utm_source: utmParams.utm_source || 'none'
+      })
+      
+      window.gtag('event', 'conversion', conversionPayload);
+      
+      // Também enviar evento de purchase para melhor tracking
+      window.gtag('event', 'purchase', {
+        'transaction_id': transactionId,
+        'value': conversionValueBRL,
+        'currency': 'BRL',
+        'items': [{
+          'item_id': productName,
+          'item_name': productName,
+          'price': conversionValueBRL,
+          'quantity': 1
+        }]
       });
       
-      console.log(`✅ [GOOGLE ADS] Conversão enviada com sucesso!`)
+      console.log(`✅ [GOOGLE ADS] Conversão otimizada enviada com sucesso!`)
       
       // Marcar que conversão foi reportada
       setConversionReported(true);
     } catch (error) {
-      console.error('Erro ao reportar conversão:', error)
+      console.error('❌ [GOOGLE ADS] Erro ao reportar conversão:', error)
     }
   }
 
