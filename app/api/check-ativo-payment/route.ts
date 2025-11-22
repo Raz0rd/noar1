@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+export const dynamic = 'force-dynamic'
+
 const API_KEY = "84f2022f-a84b-4d63-a727-1780e6261fe8"
 
 export async function GET(request: NextRequest) {
