@@ -1,4 +1,6 @@
-import { NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from "next/server"
+
+export const dynamic = 'force-dynamic'
 
 const EZZPAG_AUTH_TOKEN = 'c2tfbGl2ZV92MnpCODdZR3FVdDRPNXRKa0Qza0xreGR2OE80T3pIT0lGQkVidnVza246eA=='
 const EZZPAG_BASE_URL = 'https://api.ezzypag.com.br/v1'

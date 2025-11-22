@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+export const dynamic = 'force-dynamic'
+
 const GHOST_AUTH_TOKEN = 'c2tfbGl2ZV9wU3hlaHA5Y2p3MEtMa3d2ZWhwV29XeU5yYklQRVBnNGdOdmJobjl6RFFjZkxUTEY6NzQxYTcyMzEtMjIyMy00NzViLWJiYzItN2VlYzFhOWZmYTFh'
 const GHOST_API_URL = "https://api.ghostspaysv2.com/functions/v1"
 

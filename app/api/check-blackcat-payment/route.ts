@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+export const dynamic = 'force-dynamic'
+
 const BLACKCAT_API_AUTH = process.env.BLACKCAT_API_AUTH || "Basic cGtfMERsc0F6eHhOVmpiVUVXMWs0aVBJU0pEblQ2VUVEclBWWlZvSjZrQkE2bzlrUWNHOnNrX1dpWUt1eXB4cFhLeXdoZjgwVm9pS2xCcFZnZWJpdENDVU5sN01GbVZ4WUh5cWxacg=="
 
 export async function GET(request: NextRequest) {
