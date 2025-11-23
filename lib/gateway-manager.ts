@@ -6,7 +6,7 @@
  * o mesmo gateway durante toda a sessão.
  */
 
-export type GatewayType = 'ezzpag' | 'blackcat' | 'ativo' | 'ghost'
+export type GatewayType = 'nitro' | 'ghost' | 'ezzpag' | 'blackcat' | 'ativo'
 
 export interface GatewayConfig {
   id: GatewayType
@@ -19,10 +19,11 @@ export interface GatewayConfig {
 
 // Mapeamento de nomes para não expor gateways reais
 const GATEWAY_NAME_MAP: Record<GatewayType, string> = {
-  'ezzpag': 'gateway_a',
+  'nitro': 'gateway_a',
   'ghost': 'gateway_b',
-  'blackcat': 'gateway_c',
-  'ativo': 'gateway_d'
+  'ezzpag': 'gateway_c',
+  'blackcat': 'gateway_d',
+  'ativo': 'gateway_e'
 }
 
 // Função para obter nome mapeado
@@ -33,9 +34,25 @@ export function getMappedGatewayName(gatewayId: GatewayType): string {
 // Configuração dos gateways disponíveis
 const GATEWAYS: GatewayConfig[] = [
   {
+    id: 'nitro',
+    name: 'Nitro Pagamentos',
+    enabled: false, // Desabilitado
+    endpoint: '/api/nitro-transaction',
+    checkEndpoint: '/api/check-nitro-payment',
+    priority: 1
+  },
+  {
+    id: 'ghost',
+    name: 'Ghost Pay',
+    enabled: true,
+    endpoint: '/api/ghost-transaction',
+    checkEndpoint: '/api/check-ghost-payment',
+    priority: 1
+  },
+  {
     id: 'ezzpag',
     name: 'Ezzpag',
-    enabled: true,
+    enabled: false, // Desabilitado
     endpoint: '/api/payment-transaction',
     checkEndpoint: '/api/check-payment-status',
     priority: 1
@@ -43,7 +60,7 @@ const GATEWAYS: GatewayConfig[] = [
   {
     id: 'blackcat',
     name: 'BlackCat',
-    enabled: false, // Desabilitado por padrão
+    enabled: false, // Desabilitado
     endpoint: '/api/blackcat-transaction',
     checkEndpoint: '/api/check-blackcat-payment',
     priority: 1
@@ -51,17 +68,9 @@ const GATEWAYS: GatewayConfig[] = [
   {
     id: 'ativo',
     name: 'Ativo/Umbrela',
-    enabled: false, // Desabilitado por padrão
+    enabled: false, // Desabilitado
     endpoint: '/api/ativo-transaction',
     checkEndpoint: '/api/check-ativo-payment',
-    priority: 1
-  },
-  {
-    id: 'ghost',
-    name: 'Ghost Pay',
-    enabled: true, // Desabilitado por padrão
-    endpoint: '/api/ghost-transaction',
-    checkEndpoint: '/api/check-ghost-payment',
     priority: 1
   }
 ]

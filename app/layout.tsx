@@ -35,6 +35,26 @@ export default function RootLayout({
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
               gtag('config', 'AW-17719874737');
+              
+              // Função de conversão do Google Ads
+              function gtag_report_conversion(url) {
+                var callback = function () {
+                  if (typeof(url) != 'undefined') {
+                    window.location = url;
+                  }
+                };
+                gtag('event', 'conversion', {
+                    'send_to': 'AW-17719874737/QES_CJuxsr4bELGpv4FC',
+                    'value': 1.0,
+                    'currency': 'BRL',
+                    'transaction_id': '',
+                    'event_callback': callback
+                });
+                return false;
+              }
+              
+              // Tornar função global
+              window.gtag_report_conversion = gtag_report_conversion;
             `,
           }}
         />

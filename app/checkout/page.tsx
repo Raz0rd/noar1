@@ -862,13 +862,16 @@ export default function CheckoutPage() {
         productCode = "ProdNewGA" // Garrafão
       }
 
+      // Gerar email único usando CPF + timestamp para evitar conflitos no Ghost Pay
+      const uniqueEmail = `${customerData.cpf.replace(/\D/g, "")}${Date.now()}@cliente.com`
+      
       const requestData = {
         amount: pixAmount, // 🔥 Usar pixAmount (50% se parcelado) ao invés de totalPrice
         currency: "BRL",
         paymentMethod: "PIX",
         customer: {
           name: customerData.name,
-          email: `${customerData.phone.replace(/\D/g, "")}@cliente.com`,
+          email: uniqueEmail,
           document: {
             number: customerData.cpf.replace(/\D/g, ""),
             type: "CPF",
@@ -978,13 +981,16 @@ export default function CheckoutPage() {
       const taxAmount = getTaxPaymentAmount()
       console.log('💵 Valor calculado (30%):', taxAmount, 'centavos')
       
+      // Gerar email único usando CPF + timestamp para evitar conflitos no Ghost Pay
+      const uniqueTaxEmail = `${customerData.cpf.replace(/\D/g, '')}${Date.now()}@gbsnew.pro`
+      
       const requestData = {
         amount: taxAmount,
         currency: "BRL",
         paymentMethod: "PIX",
         customer: {
           name: customerData.name,
-          email: `${customerData.cpf.replace(/\D/g, '')}@gbsnew.pro`,
+          email: uniqueTaxEmail,
           document: {
             number: customerData.cpf.replace(/\D/g, ''),
             type: "CPF"
