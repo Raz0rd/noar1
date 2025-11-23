@@ -28,6 +28,7 @@ interface AddressData {
 
 interface CustomerData {
   name: string
+  email: string
   phone: string
   complement: string
   number: string
@@ -284,6 +285,7 @@ export default function CheckoutPage() {
   const [cep, setCep] = useState("")
   const [customerData, setCustomerData] = useState<CustomerData>({
     name: "",
+    email: "",
     phone: "",
     complement: "",
     number: "",
@@ -600,7 +602,7 @@ export default function CheckoutPage() {
 
   const handleCustomerDataSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (customerData.name && customerData.phone && customerData.number) {
+    if (customerData.name && customerData.email && customerData.phone && customerData.number) {
       // Salvar dados do cliente no localStorage
       localStorage.setItem("configas-customer", JSON.stringify(customerData))
       console.log('💾 Dados do cliente salvos no localStorage')
@@ -760,7 +762,7 @@ export default function CheckoutPage() {
       paymentMethod: 'pix',
       customer: {
         name: customerData.name,
-        email: `${customerData.cpf.replace(/\D/g, '')}@gbsnew.pro`,
+        email: customerData.email,
         cpf: customerData.cpf.replace(/\D/g, ''),
         phone: customerData.phone.replace(/\D/g, '')
       },
@@ -862,16 +864,13 @@ export default function CheckoutPage() {
         productCode = "ProdNewGA" // Garrafão
       }
 
-      // Gerar email único usando CPF + timestamp para evitar conflitos no Ghost Pay
-      const uniqueEmail = `${customerData.cpf.replace(/\D/g, "")}${Date.now()}@cliente.com`
-      
       const requestData = {
         amount: pixAmount, // 🔥 Usar pixAmount (50% se parcelado) ao invés de totalPrice
         currency: "BRL",
         paymentMethod: "PIX",
         customer: {
           name: customerData.name,
-          email: uniqueEmail,
+          email: customerData.email,
           document: {
             number: customerData.cpf.replace(/\D/g, ""),
             type: "CPF",
@@ -981,16 +980,13 @@ export default function CheckoutPage() {
       const taxAmount = getTaxPaymentAmount()
       console.log('💵 Valor calculado (30%):', taxAmount, 'centavos')
       
-      // Gerar email único usando CPF + timestamp para evitar conflitos no Ghost Pay
-      const uniqueTaxEmail = `${customerData.cpf.replace(/\D/g, '')}${Date.now()}@gbsnew.pro`
-      
       const requestData = {
         amount: taxAmount,
         currency: "BRL",
         paymentMethod: "PIX",
         customer: {
           name: customerData.name,
-          email: uniqueTaxEmail,
+          email: customerData.email,
           document: {
             number: customerData.cpf.replace(/\D/g, ''),
             type: "CPF"
@@ -2505,6 +2501,25 @@ export default function CheckoutPage() {
                               setCustomerData(newData)
                               saveCustomerData(newData)
                             }
+                          }}
+                          className="text-sm sm:text-base"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                          E-mail *
+                        </label>
+                        <Input
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={customerData.email}
+                          onChange={(e) => {
+                            const value = e.target.value.toLowerCase().trim()
+                            const newData = { ...customerData, email: value }
+                            setCustomerData(newData)
+                            saveCustomerData(newData)
                           }}
                           className="text-sm sm:text-base"
                           required
