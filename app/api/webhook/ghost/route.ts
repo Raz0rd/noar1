@@ -6,6 +6,10 @@ import path from 'path'
 function getConversionTag(host: string): string {
   const normalizedHost = host.toLowerCase()
   
+  if (normalizedHost.includes('distribuidoraconfigas.store')) {
+    return 'AW-17782966379/4c9_CJqU4cwbEOuQyp9C'
+  }
+  
   if (normalizedHost.includes('entregasexpressnasuaporta.store')) {
     return 'AW-17554338622/ZCa-CN2Y7qobEL7mx7JB'
   }
@@ -14,7 +18,7 @@ function getConversionTag(host: string): string {
     return 'AW-17545933033/08VqCI_Qj5obEOnhxq5B'
   }
   
-  return 'AW-17545933033/08VqCI_Qj5obEOnhxq5B' // Fallback gasbutano
+  return 'AW-17782966379/4c9_CJqU4cwbEOuQyp9C' // Fallback distribuidoraconfigas
 }
 
 // Função para obter API Key UTMify baseada no domínio

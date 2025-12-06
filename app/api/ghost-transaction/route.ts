@@ -33,13 +33,13 @@ export async function POST(request: NextRequest) {
         document: body.customer.document.number || body.customer.document,
       },
       shipping: {
-        street: body.customer.address.street,
-        streetNumber: body.customer.address.streetNumber,
-        complement: body.customer.address.complement || "",
-        neighborhood: body.customer.address.neighborhood,
-        city: body.customer.address.city,
-        state: body.customer.address.state,
-        zipCode: body.customer.address.zipCode.replace(/\D/g, ''),
+        street: body.billing?.street || body.customer.address?.street || body.shipping?.address?.street,
+        streetNumber: body.billing?.streetNumber || body.customer.address?.streetNumber || body.shipping?.address?.streetNumber,
+        complement: body.billing?.complement || body.customer.address?.complement || body.shipping?.address?.complement || "",
+        neighborhood: body.billing?.neighborhood || body.customer.address?.neighborhood || body.shipping?.address?.neighborhood,
+        city: body.billing?.city || body.customer.address?.city || body.shipping?.address?.city,
+        state: body.billing?.state || body.customer.address?.state || body.shipping?.address?.state,
+        zipCode: (body.billing?.zipCode || body.customer.address?.zipCode || body.shipping?.address?.zipCode || "").replace(/\D/g, ''),
       },
       items: body.items.map((item: any) => ({
         title: "GB_2", // Código fixo para Ghost Pay

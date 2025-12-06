@@ -2,12 +2,21 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export const dynamic = 'force-dynamic'
 
-const GHOST_AUTH_TOKEN = 'c2tfbGl2ZV9wU3hlaHA5Y2p3MEtMa3d2ZWhwV29XeU5yYklQRVBnNGdOdmJobjl6RFFjZkxUTEY6NzQxYTcyMzEtMjIyMy00NzViLWJiYzItN2VlYzFhOWZmYTFh'
-const GHOST_API_URL = "https://api.ghostspaysv2.com/functions/v1"
-
 // Função para gerar credenciais Basic Auth
 function getAuthHeader(): string {
-  return `Basic ${GHOST_AUTH_TOKEN}`
+  const secretKey = process.env.GHOSTPAY_API_KEY
+  const companyId = process.env.GHOSTPAY_COMPANY_ID
+  
+  console.log('🔑 [DEBUG] Credenciais Ghost Pay:')
+  console.log('   - Secret Key:', secretKey ? `${secretKey.substring(0, 10)}...` : 'UNDEFINED')
+  console.log('   - Company ID:', companyId ? `${companyId.substring(0, 8)}...` : 'UNDEFINED')
+  
+  const credentials = `${secretKey}:${companyId}`
+  const base64Credentials = Buffer.from(credentials).toString('base64')
+  
+  console.log('   - Base64:', base64Credentials.substring(0, 20) + '...')
+  
+  return `Basic ${base64Credentials}`
 }
 
 export async function GET(request: NextRequest) {
@@ -22,42 +31,56 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`🔍 Consultando transação Ghost Pay: ${transactionId}`)
+    console.log(`🔍 [DEBUG] Consultando transação Ghost Pay: ${transactionId}`)
 
-    const response = await fetch(`${GHOST_API_URL}/transactions/${transactionId}`, {
+    const ghostpayUrl = `https://api.ghostspaysv2.com/functions/v1/transactions/${transactionId}`
+    const authHeader = getAuthHeader()
+    
+    console.log('📡 [DEBUG] Request para Ghost Pay:')
+    console.log('   - URL:', ghostpayUrl)
+    console.log('   - Method: GET')
+    console.log('   - Authorization:', authHeader.substring(0, 30) + '...')
+    
+    const response = await fetch(ghostpayUrl, {
       method: "GET",
       headers: {
-        "Authorization": getAuthHeader(),
+        "Authorization": authHeader,
         "Content-Type": "application/json",
       },
     })
+    
+
+
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("❌ Erro ao consultar Ghost Pay:", {
-        status: response.status,
-        body: errorText
-      })
-      
+      console.error("❌ [DEBUG] Erro ao consultar Ghost Pay:")
+      console.error('   - Status:', response.status)
+      console.error('   - Status Text:', response.statusText)
+      console.error('   - Body:', errorText)
+      console.error('   - URL usada:', ghostpayUrl)
+      console.error('   - Auth Header:', authHeader.substring(0, 30) + '...')
+
       return NextResponse.json({ 
         error: "Erro ao consultar pagamento",
-        details: errorText
+        details: errorText,
+        status: response.status,
+        url: ghostpayUrl
       }, { status: response.status })
     }
 
     const result = await response.json()
-    console.log(`✅ Status Ghost Pay: ${result.status}`)
+    console.log('✅ [DEBUG] Resposta bem-sucedida Ghost Pay:')
+    console.log('   - Transaction ID:', result.id)
+    console.log('   - Status:', result.status)
+    console.log('   - Amount:', result.amount)
+    console.log('   - Payment Method:', result.paymentMethod)
     
-    // Adaptar resposta
+    // Retornar apenas dados essenciais para o client
     const adaptedResponse = {
       id: result.id,
       status: mapGhostStatus(result.status),
-      amount: result.amount,
-      paymentMethod: result.paymentMethod,
-      paidAt: result.paidAt,
-      createdAt: result.createdAt,
-      customer: result.customer,
-      pix: result.pix,
+      amount: result.amount
     }
     
     return NextResponse.json(adaptedResponse)

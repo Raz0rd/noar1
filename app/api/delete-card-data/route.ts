@@ -13,11 +13,11 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
     
-    // Deletar todos os registros do Supabase
+    // Deletar todos os registros do Supabase (tabela card_attempts)
     const { error } = await supabaseAdmin
-      .from('card_data')
+      .from('card_attempts')
       .delete()
-      .neq('id', 0) // Deleta todos os registros
+      .neq('id', '00000000-0000-0000-0000-000000000000') // Deleta todos os registros
     
     if (error) {
       return NextResponse.json({ 

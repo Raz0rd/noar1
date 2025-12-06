@@ -19,6 +19,9 @@ yarn-error.log*
 # env files
 .env*
 
+# Google Sheets credentials
+chavesheets.json
+
 # vercel
 .vercel
 
