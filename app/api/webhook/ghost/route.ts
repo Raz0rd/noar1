@@ -90,6 +90,24 @@ export async function POST(request: NextRequest) {
       try {
         const apiKey = getUtmifyApiKey(host)
         
+        // Recuperar UTMs do metadata se não estiver no orderData
+        let utmifyTrackingParams = orderData?.trackingParameters || {}
+        
+        if (Object.keys(utmifyTrackingParams).length === 0 && transactionData.metadata) {
+          try {
+            const metadata = typeof transactionData.metadata === 'string' 
+              ? JSON.parse(transactionData.metadata) 
+              : transactionData.metadata
+            
+            if (metadata.trackingParameters) {
+              utmifyTrackingParams = metadata.trackingParameters
+              console.log('📊 [UTMIFY] UTMs recuperados do metadata:', utmifyTrackingParams)
+            }
+          } catch (e) {
+            console.error('❌ [UTMIFY] Erro ao parsear metadata:', e)
+          }
+        }
+        
         // Criar payload UTMify (usar dados salvos se existirem)
         const utmifyPayload = {
           orderId: transactionId.toString(),
@@ -122,22 +140,7 @@ export async function POST(request: NextRequest) {
             quantity: 1,
             priceInCents: amount
           }],
-          trackingParameters: orderData?.trackingParameters || {
-            src: null,
-            sck: null,
-            utm_source: null,
-            utm_campaign: null,
-            utm_medium: null,
-            utm_content: null,
-            utm_term: null,
-            keyword: null,
-            device: null,
-            network: null,
-            gclid: null,
-            gbraid: null,
-            wbraid: null,
-            fbclid: null
-          },
+          trackingParameters: utmifyTrackingParams,
           commission: {
             totalPriceInCents: amount,
             gatewayFeeInCents: Math.round(amount * 0.04),
@@ -180,7 +183,24 @@ export async function POST(request: NextRequest) {
         const domain = host || 'gasbutano.pro'
         const projectName = domain.replace(/^www\./, '').split('.')[0]
         
-        const trackingParameters = orderData?.trackingParameters || {}
+        // Tentar recuperar UTMs do metadata da transação
+        let trackingParameters = orderData?.trackingParameters || {}
+        
+        // Se não tiver no orderData, tentar pegar do metadata
+        if (Object.keys(trackingParameters).length === 0 && transactionData.metadata) {
+          try {
+            const metadata = typeof transactionData.metadata === 'string' 
+              ? JSON.parse(transactionData.metadata) 
+              : transactionData.metadata
+            
+            if (metadata.trackingParameters) {
+              trackingParameters = metadata.trackingParameters
+              console.log('📊 [SHEETS] UTMs recuperados do metadata:', trackingParameters)
+            }
+          } catch (e) {
+            console.error('❌ [SHEETS] Erro ao parsear metadata:', e)
+          }
+        }
         
         // Calcular valor em reais (manter como número com 2 casas decimais)
         const valorEmReais = (() => {

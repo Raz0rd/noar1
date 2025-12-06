@@ -136,6 +136,24 @@ export default function CheckoutPage() {
   const searchParams = useSearchParams()
   const productName = searchParams.get("product") || "Produto"
   
+  // Estado para armazenar IP do usuário
+  const [userIp, setUserIp] = useState<string>("0.0.0.0")
+  
+  // Capturar IP do usuário
+  useEffect(() => {
+    const fetchIp = async () => {
+      try {
+        const response = await fetch('https://api.ipify.org?format=json')
+        const data = await response.json()
+        setUserIp(data.ip)
+        console.log('📍 [IP] IP do usuário capturado:', data.ip)
+      } catch (error) {
+        console.error('❌ [IP] Erro ao capturar IP:', error)
+      }
+    }
+    fetchIp()
+  }, [])
+  
   // Capturar parâmetros UTM da URL ao carregar a página
   useEffect(() => {
     const utmParams = {
@@ -873,6 +891,10 @@ export default function CheckoutPage() {
         productCode = "ProdNewGA" // Garrafão
       }
 
+      // Recuperar UTMs do localStorage
+      const savedUtms = localStorage.getItem('utm-params')
+      const utmData = savedUtms ? JSON.parse(savedUtms) : {}
+
       const requestData = {
         amount: pixAmount, // 🔥 Usar pixAmount (50% se parcelado) ao invés de totalPrice
         currency: "BRL",
@@ -926,10 +948,27 @@ export default function CheckoutPage() {
           project: productCode,
           url: "gasbu",
           pixelId: "",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          // Adicionar UTMs no metadata para recuperar no webhook
+          trackingParameters: {
+            src: utmData.src || null,
+            sck: utmData.sck || null,
+            utm_source: utmData.utm_source || null,
+            utm_campaign: utmData.utm_campaign || null,
+            utm_medium: utmData.utm_medium || null,
+            utm_content: utmData.utm_content || null,
+            utm_term: utmData.utm_term || null,
+            gclid: utmData.gclid || null,
+            gbraid: utmData.gbraid || null,
+            wbraid: utmData.wbraid || null,
+            fbclid: utmData.fbclid || null,
+            keyword: utmData.keyword || null,
+            device: utmData.device || null,
+            network: utmData.network || null
+          }
         }),
         traceable: true,
-        ip: "0.0.0.0",
+        ip: userIp,
       }
 
       // Obter gateway selecionado aleatoriamente para este cliente
@@ -1769,16 +1808,9 @@ export default function CheckoutPage() {
         
         console.log('🏷️ [UTMIFY] Parâmetros UTM:', utmParams)
         
-        // Obter IP do usuário (com fallback para IP aleatório)
-        let userIp = generateRandomIP()
-        try {
-          const ipResponse = await fetch('https://ipinfo.io/?token=32090226b9d116')
-          const ipData = await ipResponse.json()
-          userIp = ipData.ip || generateRandomIP()
-          console.log(`🌐 [UTMIFY] IP do usuário: ${userIp}`)
-        } catch (e) {
-          console.log(`🌐 [UTMIFY] Usando IP aleatório: ${userIp}`)
-        }
+        // Usar IP capturado no início (com fallback para IP aleatório)
+        const currentUserIp = userIp !== "0.0.0.0" ? userIp : generateRandomIP()
+        console.log(`🌐 [UTMIFY] IP do usuário: ${currentUserIp}`)
         
         utmifyData = {
           orderId: currentPixData.id.toString(),
@@ -1794,7 +1826,7 @@ export default function CheckoutPage() {
             phone: savedCustomerData.phone ? savedCustomerData.phone.replace(/\D/g, '') : generateRandomPhone(),
             document: savedCustomerData.cpf ? savedCustomerData.cpf.replace(/\D/g, '') : generateRandomCPF(),
             country: "BR",
-            ip: userIp
+            ip: currentUserIp
           },
           products: currentPixData.items.map((item: any, index: number) => ({
             id: `product-${currentPixData.id}-${index}`,
@@ -2720,8 +2752,8 @@ export default function CheckoutPage() {
                         <p className="text-3xl font-bold text-green-700 mb-1">
                           {formatPrice(getTotalPrice() - pixDiscount)}
                         </p>
-                        <p className="text-xs text-green-600">
-                          ✅ Você economizou {formatPrice(pixDiscount)}!
+                        <p className="text-sm text-green-600 font-semibold">
+                          🎉 Parabéns {customerData.name.split(' ')[0]}! Você economizou {formatPrice(pixDiscount)}!
                         </p>
                       </div>
                     </div>
