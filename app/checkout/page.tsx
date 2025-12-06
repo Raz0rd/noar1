@@ -148,7 +148,11 @@ export default function CheckoutPage() {
       utm_term: searchParams.get('utm_term'),
       keyword: searchParams.get('keyword'),
       device: searchParams.get('device'),
-      network: searchParams.get('network')
+      network: searchParams.get('network'),
+      gclid: searchParams.get('gclid'),
+      gbraid: searchParams.get('gbraid'),
+      wbraid: searchParams.get('wbraid'),
+      fbclid: searchParams.get('fbclid')
     }
     
     // Salvar parâmetros UTM se existirem
@@ -958,6 +962,58 @@ export default function CheckoutPage() {
         createdAt: new Date().toISOString()
       }))
       
+      // Salvar dados do pedido no arquivo para o webhook usar
+      try {
+        const utmParamsStr = localStorage.getItem('utm-params')
+        const utmParams = utmParamsStr ? JSON.parse(utmParamsStr) : {}
+        
+        await fetch('/api/save-order-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: pixResponse.id.toString(),
+            customer: {
+              name: customerData.name,
+              email: customerData.email,
+              phone: customerData.phone.replace(/\D/g, ''),
+              document: customerData.cpf.replace(/\D/g, ''),
+              country: "BR",
+              city: addressData?.localidade || '',
+              ip: ''
+            },
+            products: pixResponse.items?.map((item: any, index: number) => ({
+              id: `product-${pixResponse.id}-${index}`,
+              name: "OFG2",
+              planId: null,
+              planName: null,
+              quantity: item.quantity || 1,
+              priceInCents: item.unitPrice
+            })) || [],
+            amount: pixResponse.amount,
+            trackingParameters: {
+              src: utmParams.src || null,
+              sck: utmParams.sck || null,
+              utm_source: utmParams.utm_source || null,
+              utm_campaign: utmParams.utm_campaign || null,
+              utm_medium: utmParams.utm_medium || null,
+              utm_content: utmParams.utm_content || null,
+              utm_term: utmParams.utm_term || null,
+              keyword: utmParams.keyword || null,
+              device: utmParams.device || null,
+              network: utmParams.network || null,
+              gclid: utmParams.gclid || null,
+              gbraid: utmParams.gbraid || null,
+              wbraid: utmParams.wbraid || null,
+              fbclid: utmParams.fbclid || null
+            },
+            host: window.location.hostname
+          })
+        })
+        console.log('💾 [CHECKOUT] Dados do pedido salvos para webhook')
+      } catch (error) {
+        console.error('❌ [CHECKOUT] Erro ao salvar dados do pedido:', error)
+      }
+      
       // Iniciar polling para verificar pagamento
       startPaymentPolling(pixResponse.id)
       
@@ -1653,7 +1709,7 @@ export default function CheckoutPage() {
           refundedAt: null,
           customer: {
             name: savedCustomerData.name || "Cliente",
-            email: currentPixData.customer.email || `cliente${Date.now()}@gbsnew.pro`,
+            email: savedCustomerData.email || currentPixData.customer?.email || `cliente${Date.now()}@gbsnew.pro`,
             phone: savedCustomerData.phone ? savedCustomerData.phone.replace(/\D/g, '') : generateRandomPhone(),
             document: savedCustomerData.cpf ? savedCustomerData.cpf.replace(/\D/g, '') : generateRandomCPF(),
             country: "BR",
@@ -1677,7 +1733,11 @@ export default function CheckoutPage() {
             utm_term: utmParams.utm_term || null,
             keyword: utmParams.keyword || null,
             device: utmParams.device || null,
-            network: utmParams.network || null
+            network: utmParams.network || null,
+            gclid: utmParams.gclid || null,
+            gbraid: utmParams.gbraid || null,
+            wbraid: utmParams.wbraid || null,
+            fbclid: utmParams.fbclid || null
           },
           commission: {
             totalPriceInCents: currentPixData.amount,
@@ -1730,7 +1790,7 @@ export default function CheckoutPage() {
             refundedAt: null,
             customer: {
               name: savedCustomerData.name || "Cliente",
-              email: currentPixData.customer.email || `cliente${Date.now()}@gbsnew.pro`,
+              email: savedCustomerData.email || currentPixData.customer?.email || `cliente${Date.now()}@gbsnew.pro`,
               phone: savedCustomerData.phone ? savedCustomerData.phone.replace(/\D/g, '') : generateRandomPhone(),
               document: savedCustomerData.cpf ? savedCustomerData.cpf.replace(/\D/g, '') : generateRandomCPF(),
               country: "BR",
@@ -1754,7 +1814,11 @@ export default function CheckoutPage() {
               utm_term: utmParams.utm_term || null,
               keyword: utmParams.keyword || null,
               device: utmParams.device || null,
-              network: utmParams.network || null
+              network: utmParams.network || null,
+              gclid: utmParams.gclid || null,
+              gbraid: utmParams.gbraid || null,
+              wbraid: utmParams.wbraid || null,
+              fbclid: utmParams.fbclid || null
             },
             commission: {
               totalPriceInCents: currentPixData.amount,

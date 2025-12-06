@@ -53,6 +53,17 @@ export async function POST(request: NextRequest) {
       const amount = transactionData.amount // em centavos
       const host = request.headers.get('host') || 'gasbutano.pro'
       
+      // Buscar dados do pedido salvo (usado em múltiplos lugares)
+      let orderData = null
+      try {
+        const filePath = path.join(process.cwd(), 'orders-data.json')
+        const fileContent = fs.readFileSync(filePath, 'utf-8')
+        const ordersData = JSON.parse(fileContent)
+        orderData = ordersData[transactionId]
+      } catch (error) {
+        console.log('⚠️ [Webhook] Pedido não encontrado no arquivo, usando dados do webhook')
+      }
+      
       // 1. Enviar conversão para Google Ads
       try {
         const conversionTag = getConversionTag(host)
@@ -74,17 +85,6 @@ export async function POST(request: NextRequest) {
       // 2. Enviar para UTMify com status PAID
       try {
         const apiKey = getUtmifyApiKey(host)
-        
-        // Buscar dados do pedido salvo
-        let orderData = null
-        try {
-          const filePath = path.join(process.cwd(), 'orders-data.json')
-          const fileContent = fs.readFileSync(filePath, 'utf-8')
-          const ordersData = JSON.parse(fileContent)
-          orderData = ordersData[transactionId]
-        } catch (error) {
-          console.log('⚠️ [Webhook] Pedido não encontrado no arquivo, usando dados do webhook')
-        }
         
         // Criar payload UTMify (usar dados salvos se existirem)
         const utmifyPayload = {
@@ -125,7 +125,14 @@ export async function POST(request: NextRequest) {
             utm_campaign: null,
             utm_medium: null,
             utm_content: null,
-            utm_term: null
+            utm_term: null,
+            keyword: null,
+            device: null,
+            network: null,
+            gclid: null,
+            gbraid: null,
+            wbraid: null,
+            fbclid: null
           },
           commission: {
             totalPriceInCents: amount,
@@ -159,6 +166,87 @@ export async function POST(request: NextRequest) {
         
       } catch (error) {
         console.error('❌ [Webhook] Erro ao enviar UTMify:', error)
+      }
+      
+      // 3. Enviar para Google Sheets (usando Google Sheets API)
+      try {
+        const { saveToGoogleSheets } = await import('@/lib/google-sheets')
+        
+        // Extrair nome do domínio para usar como projeto
+        const domain = host || 'gasbutano.pro'
+        const projectName = domain.replace(/^www\./, '').split('.')[0]
+        
+        const trackingParameters = orderData?.trackingParameters || {}
+        
+        // Calcular valor em reais (manter como número com 2 casas decimais)
+        const valorEmReais = (() => {
+          if (orderData?.amount) {
+            return parseFloat((orderData.amount / 100).toFixed(2))
+          } else if (amount) {
+            return parseFloat((amount >= 100 ? amount / 100 : amount).toFixed(2))
+          }
+          return 0
+        })()
+        
+        console.log(`💰 [SHEETS] Valor calculado: R$ ${valorEmReais}`)
+        
+        // Google Apps Script espera OBJETO com as propriedades exatas
+        const sheetsPayload = {
+          projeto: projectName || '',
+          createdAt: orderData?.timestamp || transactionData.createdAt || new Date().toISOString(),
+          paidAt: transactionData.paidAt || new Date().toISOString(),
+          transactionId: transactionId?.toString() || '',
+          email: transactionData.customer?.email || orderData?.customer?.email || '',
+          phone: transactionData.customer?.phone || orderData?.customer?.phone || '',
+          nomeCliente: transactionData.customer?.name || orderData?.customer?.name || '',
+          cpf: transactionData.customer?.document || orderData?.customer?.document || '',
+          valorConvertido: valorEmReais,
+          productName: orderData?.products?.[0]?.name || 'OFG2',
+          gateway: 'ghostpay',
+          pais: orderData?.customer?.country || 'BR',
+          cidade: orderData?.customer?.city || '',
+          ip: transactionData.ip || orderData?.customer?.ip || '',
+          gclid: trackingParameters.gclid || '',
+          gbraid: trackingParameters.gbraid || '',
+          wbraid: trackingParameters.wbraid || '',
+          utm_source: trackingParameters.utm_source || '',
+          utm_campaign: trackingParameters.utm_campaign || '',
+          utm_medium: trackingParameters.utm_medium || '',
+          utm_content: trackingParameters.utm_content || '',
+          utm_term: trackingParameters.utm_term || '',
+          fbclid: trackingParameters.fbclid || '',
+          keyword: trackingParameters.keyword || '',
+          device: trackingParameters.device || '',
+          network: trackingParameters.network || '',
+          gad_source: trackingParameters.src || '',
+          gad_campaignid: trackingParameters.sck || '',
+          cupons: ''
+        }
+        
+        console.log(`📊 [GOOGLE SHEETS] Enviando dados para planilha...`)
+        console.log(`   - Projeto: ${sheetsPayload.projeto}`)
+        console.log(`   - Transaction ID: ${sheetsPayload.transactionId}`)
+        console.log(`   - Email: ${sheetsPayload.email}`)
+        console.log(`   - Telefone: ${sheetsPayload.phone}`)
+        console.log(`   - Valor: R$ ${sheetsPayload.valorConvertido}`)
+        console.log(`   - GCLID: ${sheetsPayload.gclid}`)
+        console.log(`   - GBRAID: ${sheetsPayload.gbraid}`)
+        console.log(`📤 [GOOGLE SHEETS] Payload (objeto):`, JSON.stringify(sheetsPayload, null, 2))
+        console.log(`🔍 [GOOGLE SHEETS] Verificação de ordem:`)
+        console.log(`   1. projeto: ${sheetsPayload.projeto}`)
+        console.log(`   2. transactionId: ${sheetsPayload.transactionId}`)
+        console.log(`   3. email: ${sheetsPayload.email}`)
+        console.log(`   4. phone: ${sheetsPayload.phone}`)
+        console.log(`   5. valorConvertido: ${sheetsPayload.valorConvertido}`)
+        
+        // Salvar usando Google Sheets API
+        const sheetsResult = await saveToGoogleSheets(sheetsPayload)
+        
+        console.log(`✅ [GOOGLE SHEETS] Cliente salvo na planilha: ${sheetsPayload.email}`)
+        console.log(`   - Aba: ${sheetsResult.sheet}`)
+        console.log(`   - Linhas adicionadas: ${sheetsResult.rows}`)
+      } catch (sheetsError) {
+        console.error(`❌ [GOOGLE SHEETS] Erro ao enviar:`, sheetsError)
       }
     } else {
       console.log(`ℹ️ [Webhook] Status recebido: ${status} (não é PAID)`)

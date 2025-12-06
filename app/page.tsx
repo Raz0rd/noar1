@@ -93,12 +93,20 @@ export default function HomePage() {
       utm_campaign: params.get('utm_campaign'),
       utm_medium: params.get('utm_medium'),
       utm_content: params.get('utm_content'),
-      utm_term: params.get('utm_term')
+      utm_term: params.get('utm_term'),
+      keyword: params.get('keyword'),
+      device: params.get('device'),
+      network: params.get('network'),
+      gclid: params.get('gclid'),
+      gbraid: params.get('gbraid'),
+      wbraid: params.get('wbraid'),
+      fbclid: params.get('fbclid')
     }
     
     // Salvar parâmetros UTM no localStorage
     if (Object.values(utmParams).some(val => val !== null)) {
       localStorage.setItem('utm-params', JSON.stringify(utmParams))
+      console.log('📊 [UTM PAGE] Parâmetros capturados:', utmParams)
     }
     
     // Solicitar localização do usuário automaticamente
