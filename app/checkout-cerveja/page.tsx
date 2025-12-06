@@ -61,19 +61,32 @@ export default function CheckoutCervejaPage() {
     const savedOrder = localStorage.getItem('paid-order')
     if (savedOrder) {
       const order = JSON.parse(savedOrder)
+      console.log('📦 [CHECKOUT CERVEJA] Dados do pedido anterior carregados:', {
+        customerData: !!order.customerData,
+        addressData: !!order.addressData,
+        customerName: order.customerData?.name
+      })
       setCustomerData(order.customerData)
       setAddressData(order.addressData)
+    } else {
+      console.error('❌ [CHECKOUT CERVEJA] Nenhum pedido anterior encontrado no localStorage!')
+      console.log('💡 [CHECKOUT CERVEJA] Verifique se o pagamento do gás foi concluído')
     }
   }, [router])
 
   // Gerar PIX automaticamente quando tiver os dados (apenas uma vez)
   useEffect(() => {
-    if (beers.length > 0 && customerData && !pixData && !pixLoading && !pixGenerated) {
+    if (beers.length > 0 && customerData && addressData && !pixData && !pixLoading && !pixGenerated) {
       console.log('🚀 [AUTO-PIX CERVEJA] Gerando PIX automaticamente...')
+      console.log('📊 [AUTO-PIX CERVEJA] Dados disponíveis:', {
+        beers: beers.length,
+        customerData: !!customerData,
+        addressData: !!addressData
+      })
       setPixGenerated(true) // Marcar como gerado para evitar loop
       generatePix()
     }
-  }, [beers.length, customerData, pixData, pixLoading, pixGenerated])
+  }, [beers.length, customerData, addressData, pixData, pixLoading, pixGenerated])
 
   // Timer do PIX
   useEffect(() => {
