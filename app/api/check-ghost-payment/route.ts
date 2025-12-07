@@ -47,6 +47,8 @@ export async function GET(request: NextRequest) {
         "Authorization": authHeader,
         "Content-Type": "application/json",
       },
+      cache: 'no-store', // Desabilitar cache
+      next: { revalidate: 0 } // Revalidar sempre
     })
     
 
@@ -83,7 +85,13 @@ export async function GET(request: NextRequest) {
       amount: result.amount
     }
     
-    return NextResponse.json(adaptedResponse)
+    return NextResponse.json(adaptedResponse, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    })
   } catch (error) {
     console.error("❌ Erro ao verificar pagamento Ghost Pay:", error)
     return NextResponse.json({ 

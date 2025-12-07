@@ -50,6 +50,12 @@ export async function GET(request: Request) {
       paymentMethod: data.paymentMethod,
       paidAt: data.paidAt,
       isPaid: data.status === 'PAID' || data.status === 'paid',
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     })
   } catch (error) {
     console.error('❌ [Ezzpag] Erro ao verificar pagamento:', error)
