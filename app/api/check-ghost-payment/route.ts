@@ -47,8 +47,7 @@ export async function GET(request: NextRequest) {
         "Authorization": authHeader,
         "Content-Type": "application/json",
       },
-      cache: 'no-store', // Desabilitar cache
-      next: { revalidate: 0 } // Revalidar sempre
+      cache: 'no-store' // Desabilitar cache completamente
     })
     
 
