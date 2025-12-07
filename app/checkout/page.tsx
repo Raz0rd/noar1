@@ -271,10 +271,22 @@ export default function CheckoutPage() {
             const hoursDiff = (now - createdAt) / (1000 * 60 * 60)
             
             if (hoursDiff < 2 && pixData.status !== 'paid' && pixData.status !== 'PAID') {
-              // Mostrar modal para continuar ou começar novo
-              setPendingPixData(transaction)
-              setShowPendingPixModal(true)
+              console.log('🔄 [RESTORE] PIX pendente encontrado:', {
+                id: pixData.id,
+                amount: pixData.amount,
+                status: pixData.status,
+                createdAt: pixData.createdAt
+              })
+              // Restaurar PIX pendente diretamente
+              setPixData(pixData)
+              setCustomerData(transaction.customerData)
+              setAddressData(transaction.addressData)
+              setStep(3)
+              // Iniciar polling
+              startPaymentPolling(pixData.id)
+              console.log('✅ [RESTORE] PIX restaurado e polling iniciado')
             } else {
+              console.log('⏰ [RESTORE] PIX muito antigo, limpando...')
               // Limpar PIX antigo
               localStorage.removeItem('current-pix-transaction')
             }
@@ -2137,6 +2149,14 @@ export default function CheckoutPage() {
 
   // Gerar PIX automaticamente ao chegar no Step 3
   useEffect(() => {
+    console.log('🔍 [AUTO-PIX DEBUG] useEffect disparado:', {
+      step,
+      hasPixData: !!pixData,
+      hasCustomerData: !!customerData,
+      hasAddressData: !!addressData,
+      pixLoading
+    })
+    
     if (step === 3 && !pixData && customerData && addressData) {
       console.log('🚀 [AUTO-PIX] Step 3 detectado, gerando PIX automaticamente...')
       console.log('📊 [AUTO-PIX] Dados disponíveis:', {
@@ -2155,6 +2175,8 @@ export default function CheckoutPage() {
       } else {
         console.log('⏳ [AUTO-PIX] Já está gerando, aguardando...')
       }
+    } else if (step === 3 && pixData) {
+      console.log('ℹ️ [AUTO-PIX] Step 3 mas PIX já existe (restaurado ou já gerado)')
     }
   }, [step, pixData, customerData, addressData])
 
