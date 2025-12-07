@@ -2891,8 +2891,8 @@ export default function CheckoutPage() {
                             setCustomerData(newData)
                             saveCustomerData(newData)
                           }}
-                          className="text-sm sm:text-base"
                           required
+                          className="text-sm sm:text-base"
                         />
                       </div>
 
@@ -3330,6 +3330,20 @@ export default function CheckoutPage() {
                     e.preventDefault()
                     e.stopPropagation()
                     console.log('🔘 Botão Continuar clicado')
+                    
+                    // Validar email obrigatório
+                    if (!customerData.email || customerData.email.trim() === '') {
+                      alert('⚠️ Por favor, preencha o campo de e-mail antes de continuar!')
+                      return
+                    }
+                    
+                    // Validar formato do email
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                    if (!emailRegex.test(customerData.email)) {
+                      alert('⚠️ Por favor, insira um e-mail válido!')
+                      return
+                    }
+                    
                     // Mudar para step 3 imediatamente (o loading aparecerá lá)
                     setStep(3)
                   }}
