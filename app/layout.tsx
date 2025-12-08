@@ -20,13 +20,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Suporta múltiplas tags separadas por vírgula
+  const googleAdsTags = (process.env.NEXT_PUBLIC_GOOGLE_ADS_TAGS || 'AW-17780793164')
+    .split(',')
+    .map(tag => tag.trim())
+    .filter(tag => tag.length > 0)
+  
+  const primaryTag = googleAdsTags[0]
+  
   return (
     <html lang="en">
       <head>
-        {/* Google Ads - Tag Principal AW-17782966379 */}
+        {/* Google Ads - Tag Principal */}
         <script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=AW-17782966379"
+          src={`https://www.googletagmanager.com/gtag/js?id=${primaryTag}`}
         ></script>
         <script
           dangerouslySetInnerHTML={{
@@ -34,27 +42,9 @@ export default function RootLayout({
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', 'AW-17782966379');
               
-              // Função de conversão do Google Ads
-              function gtag_report_conversion(url) {
-                var callback = function () {
-                  if (typeof(url) != 'undefined') {
-                    window.location = url;
-                  }
-                };
-                gtag('event', 'conversion', {
-                    'send_to': 'AW-17782966379/4c9_CJqU4cwbEOuQyp9C',
-                    'value': 1.0,
-                    'currency': 'BRL',
-                    'transaction_id': '',
-                    'event_callback': callback
-                });
-                return false;
-              }
-              
-              // Tornar função global
-              window.gtag_report_conversion = gtag_report_conversion;
+              // Configurar todas as tags
+              ${googleAdsTags.map(tag => `gtag('config', '${tag}');`).join('\n              ')}
             `,
           }}
         />

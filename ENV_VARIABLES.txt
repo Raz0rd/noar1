@@ -7,19 +7,13 @@ Configure estas variáveis no seu .env.local ou no Netlify:
 # ───────────────────────────────────────────────────────────────────────────────
 # 1. TAG PRINCIPAL DO GOOGLE ADS (usada no layout.tsx)
 # ───────────────────────────────────────────────────────────────────────────────
-NEXT_PUBLIC_GOOGLE_ADS_TAG=AW-17545933033
+NEXT_PUBLIC_GOOGLE_ADS_TAG=AW-17780793164
 
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 2. CONVERSÃO: INICIAR FINALIZAÇÃO DE COMPRA (quando gera QR Code)
+# 2. CONVERSÃO: COMPRA (quando pagamento é confirmado)
 # ───────────────────────────────────────────────────────────────────────────────
-NEXT_PUBLIC_GOOGLE_ADS_INITIATE_CHECKOUT=AW-17545933033/dfuaCPPBjakbEOnhxq5B
-
-
-# ───────────────────────────────────────────────────────────────────────────────
-# 3. CONVERSÃO: COMPRA (quando pagamento é confirmado)
-# ───────────────────────────────────────────────────────────────────────────────
-NEXT_PUBLIC_GOOGLE_ADS_CONVERSION=AW-17545933033/08VqCI_Qj5obEOnhxq5B
+NEXT_PUBLIC_GOOGLE_ADS_CONVERSION=AW-17780793164/XXXXXXX
 
 
 # ───────────────────────────────────────────────────────────────────────────────

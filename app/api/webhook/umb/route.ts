@@ -2,20 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import fs from 'fs'
 import path from 'path'
 
-// Função para obter conversion tag baseada no domínio
-function getConversionTag(host: string): string {
-  const normalizedHost = host.toLowerCase()
-  
-  if (normalizedHost.includes('entregasexpressnasuaporta.store')) {
-    return 'AW-17554338622/ZCa-CN2Y7qobEL7mx7JB'
-  }
-  
-  if (normalizedHost.includes('gasbutano.pro')) {
-    return 'AW-17545933033/08VqCI_Qj5obEOnhxq5B'
-  }
-  
-  return 'AW-17545933033/08VqCI_Qj5obEOnhxq5B' // Fallback gasbutano
-}
+// Nota: Conversões do Google Ads são disparadas apenas no frontend via evento 'purchase'
+// Não é necessário enviar conversões específicas nos webhooks
 
 // Função para obter API Key UTMify baseada no domínio
 function getUtmifyApiKey(host: string): string {
@@ -44,25 +32,9 @@ export async function POST(request: NextRequest) {
       const amount = body.amount // em centavos
       const host = request.headers.get('host') || 'gasbutano.pro'
       
-      // 1. Enviar conversão para Google Ads
-      try {
-        const conversionTag = getConversionTag(host)
-        const conversionValueBRL = amount / 100 // Converter centavos para reais
-        
-        console.log('📢 [Webhook] Enviando Google Ads:', {
-          conversionTag,
-          value: conversionValueBRL,
-          transactionId
-        })
-        
-        // Aqui você pode fazer uma requisição para um endpoint que dispara o gtag
-        // Ou salvar em um banco para o frontend consumir
-        
-      } catch (error) {
-        console.error('❌ [Webhook] Erro Google Ads:', error)
-      }
+      // Nota: Google Ads conversão é disparada automaticamente no frontend via evento 'purchase'
       
-      // 2. Enviar para UTMify com status PAID
+      // 1. Enviar para UTMify com status PAID
       try {
         const apiKey = getUtmifyApiKey(host)
         

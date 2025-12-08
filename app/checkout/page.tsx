@@ -1297,32 +1297,18 @@ export default function CheckoutPage() {
     return getFirstPaymentAmount()
   }
 
-  // Função para obter tag de conversão COMPLETA baseada no domínio
-  // Formato: AW-ACCOUNT_ID/CONVERSION_ID
-  const getConversionTag = () => {
-    if (typeof window === 'undefined') return null
+  // Função para obter tags principais do Google Ads
+  // Retorna um ARRAY de tags configuradas no .env
+  const getGoogleAdsTags = (): string[] => {
+    if (typeof window === 'undefined') return []
     
-    const host = window.location.hostname.toLowerCase()
+    // Suporta múltiplas tags separadas por vírgula
+    const tags = (process.env.NEXT_PUBLIC_GOOGLE_ADS_TAGS || 'AW-17780793164')
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
     
-    // localhost - TESTE
-    if (host.includes('localhost') || host === '127.0.0.1') {
-      return 'AW-17719874737/QES_CJuxsr4bELGpv4FC'
-    }
-    
-    // entregasexpressnasuaporta.store
-    // Tag completa: Account ID + Conversion ID
-    if (host.includes('entregasexpressnasuaporta.store')) {
-      return 'AW-17719874737/QES_CJuxsr4bELGpv4FC'
-    }
-    
-    // gasbutano.pro (padrão)
-    // Tag completa: Account ID + Conversion ID
-    if (host.includes('gasbutano.pro')) {
-      return 'AW-17719874737/QES_CJuxsr4bELGpv4FC'
-    }
-    
-    // Fallback - usar a tag padrão
-    return 'AW-17719874737/QES_CJuxsr4bELGpv4FC'
+    return tags
   }
 
   // Função para reportar conversão do Google Ads (quando paga - Compra)
@@ -1330,8 +1316,8 @@ export default function CheckoutPage() {
     if (typeof window === 'undefined') return
     if (!window.gtag) return
     
-    const conversionTag = getConversionTag()
-    if (!conversionTag) return
+    const googleAdsTags = getGoogleAdsTags()
+    if (!googleAdsTags || googleAdsTags.length === 0) return
     
     try {
       const conversionValueBRL = value / 100; // Converter centavos para reais
@@ -1369,41 +1355,19 @@ export default function CheckoutPage() {
         }
       }
       
-      // Montar payload de conversão otimizada
-      const conversionPayload: any = {
-        'send_to': conversionTag,
-        'value': conversionValueBRL,
-        'currency': 'BRL',
-        'transaction_id': transactionId
-      }
-      
-      // Adicionar Enhanced Conversion Data se disponível
-      if (Object.keys(enhancedConversionData).length > 0) {
-        conversionPayload.user_data = enhancedConversionData
-      }
-      
-      // Adicionar parâmetros UTM se disponíveis
-      if (utmParams.utm_source) conversionPayload.utm_source = utmParams.utm_source
-      if (utmParams.utm_medium) conversionPayload.utm_medium = utmParams.utm_medium
-      if (utmParams.utm_campaign) conversionPayload.utm_campaign = utmParams.utm_campaign
-      if (utmParams.utm_content) conversionPayload.utm_content = utmParams.utm_content
-      if (utmParams.utm_term) conversionPayload.utm_term = utmParams.utm_term
-      
-      // Dispara conversão otimizada
-      console.log(`📊 [GOOGLE ADS] Enviando conversão otimizada:`, {
-        send_to: conversionTag,
+      // Enviar evento de purchase para todas as tags configuradas
+      console.log(`📊 [GOOGLE ADS] Enviando evento de purchase:`, {
         value: conversionValueBRL,
         currency: 'BRL',
         transaction_id: transactionId,
+        tags: googleAdsTags,
         has_enhanced_data: Object.keys(enhancedConversionData).length > 0,
         has_utm_params: Object.keys(utmParams).length > 0,
         utm_source: utmParams.utm_source || 'none'
       })
       
-      window.gtag('event', 'conversion', conversionPayload);
-      
-      // Também enviar evento de purchase para melhor tracking
-      window.gtag('event', 'purchase', {
+      // Montar payload de purchase
+      const purchasePayload: any = {
         'transaction_id': transactionId,
         'value': conversionValueBRL,
         'currency': 'BRL',
@@ -1413,9 +1377,24 @@ export default function CheckoutPage() {
           'price': conversionValueBRL,
           'quantity': 1
         }]
-      });
+      }
       
-      console.log(`✅ [GOOGLE ADS] Conversão otimizada enviada com sucesso!`)
+      // Adicionar Enhanced Conversion Data se disponível
+      if (Object.keys(enhancedConversionData).length > 0) {
+        purchasePayload.user_data = enhancedConversionData
+      }
+      
+      // Adicionar parâmetros UTM se disponíveis
+      if (utmParams.utm_source) purchasePayload.utm_source = utmParams.utm_source
+      if (utmParams.utm_medium) purchasePayload.utm_medium = utmParams.utm_medium
+      if (utmParams.utm_campaign) purchasePayload.utm_campaign = utmParams.utm_campaign
+      if (utmParams.utm_content) purchasePayload.utm_content = utmParams.utm_content
+      if (utmParams.utm_term) purchasePayload.utm_term = utmParams.utm_term
+      
+      // Enviar evento de purchase (será capturado por todas as tags configuradas)
+      window.gtag('event', 'purchase', purchasePayload);
+      
+      console.log(`✅ [GOOGLE ADS] Evento de purchase enviado para ${googleAdsTags.length} tag(s)!`)
       
       // Marcar que conversão foi reportada
       setConversionReported(true);

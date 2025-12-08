@@ -2256,5 +2256,87 @@
       "fbclid": "IwAR0abcdefghijklmnop"
     },
     "host": "localhost"
+  },
+  "9d04ae49-6f2a-4369-8044-356e8561f005": {
+    "orderId": "9d04ae49-6f2a-4369-8044-356e8561f005",
+    "timestamp": "2025-12-06T21:42:29.257Z",
+    "customer": {
+      "name": "THIAGO MONTEIRO DOS SANTOS",
+      "email": "vasdio@gmail.com",
+      "phone": "85981471274",
+      "document": "07154520370",
+      "country": "BR",
+      "city": "Maracanaú",
+      "ip": ""
+    },
+    "products": [
+      {
+        "id": "product-9d04ae49-6f2a-4369-8044-356e8561f005-0",
+        "name": "OFG2",
+        "planId": null,
+        "planName": null,
+        "quantity": 1,
+        "priceInCents": 700
+      }
+    ],
+    "amount": 700,
+    "trackingParameters": {
+      "src": "google_ads_2024",
+      "sck": "cpc_gas_sp",
+      "utm_source": "google",
+      "utm_campaign": "gas_delivery_sp_2024",
+      "utm_medium": "cpc",
+      "utm_content": "botijao_p13::IwAR123456789::",
+      "utm_term": "gas_delivery::entrega gas",
+      "keyword": null,
+      "device": null,
+      "network": null,
+      "gclid": "EAIaIQobChMI123456789",
+      "gbraid": null,
+      "wbraid": null,
+      "fbclid": "IwAR123456789"
+    },
+    "host": "localhost"
+  },
+  "37723d0c-afcc-4edf-8d62-d02243093412": {
+    "orderId": "37723d0c-afcc-4edf-8d62-d02243093412",
+    "timestamp": "2025-12-06T23:52:46.231Z",
+    "customer": {
+      "name": "THIAGO MONTEIRO DOS SANTOS",
+      "email": "dasdas@gmail.com",
+      "phone": "85981471274",
+      "document": "07154520370",
+      "country": "BR",
+      "city": "Maracanaú",
+      "ip": ""
+    },
+    "products": [
+      {
+        "id": "product-37723d0c-afcc-4edf-8d62-d02243093412-0",
+        "name": "OFG2",
+        "planId": null,
+        "planName": null,
+        "quantity": 1,
+        "priceInCents": 5840
+      }
+    ],
+    "amount": 5840,
+    "trackingParameters": {
+      "src": null,
+      "sck": null,
+      "utm_source": "organic",
+      "utm_campaign": null,
+      "utm_medium": null,
+      "utm_content": null,
+      "utm_term": null,
+      "keyword": null,
+      "device": null,
+      "network": null,
+      "gclid": null,
+      "gbraid": null,
+      "wbraid": null,
+      "fbclid": null
+    },
+    "host": "localhost"
   }
 }
