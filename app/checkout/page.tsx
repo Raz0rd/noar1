@@ -2832,6 +2832,26 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent className="pt-0">
                 <form onSubmit={handleCustomerDataSubmit} className="space-y-3 sm:space-y-4">
+                  {/* E-mail - SEMPRE VISÍVEL */}
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                      E-mail *
+                    </label>
+                    <Input
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={customerData.email}
+                      onChange={(e) => {
+                        const value = e.target.value.toLowerCase().trim()
+                        const newData = { ...customerData, email: value }
+                        setCustomerData(newData)
+                        saveCustomerData(newData)
+                      }}
+                      required
+                      className="text-sm sm:text-base"
+                    />
+                  </div>
+
                   {/* Mostrar nome e CPF apenas se desconto NÃO foi aprovado */}
                   {!discountApproved && (
                     <>
@@ -2853,25 +2873,6 @@ export default function CheckoutPage() {
                           }}
                           className="text-sm sm:text-base"
                           required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                          E-mail *
-                        </label>
-                        <Input
-                          type="email"
-                          placeholder="seu@email.com"
-                          value={customerData.email}
-                          onChange={(e) => {
-                            const value = e.target.value.toLowerCase().trim()
-                            const newData = { ...customerData, email: value }
-                            setCustomerData(newData)
-                            saveCustomerData(newData)
-                          }}
-                          required
-                          className="text-sm sm:text-base"
                         />
                       </div>
 
