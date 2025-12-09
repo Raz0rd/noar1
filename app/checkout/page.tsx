@@ -2541,7 +2541,7 @@ export default function CheckoutPage() {
             <span className="hidden sm:inline">Voltar</span>
           </Button>
           <img
-            src="/images/configas.png"
+            src="/images/testelogo.png"
             alt="Configás e Água"
             className="h-14 sm:h-[60px] w-auto"
             style={{ backgroundColor: 'transparent' }}
