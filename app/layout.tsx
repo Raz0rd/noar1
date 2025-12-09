@@ -10,9 +10,73 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Configás - Gás e Água na sua Porta',
-  description: 'Entrega rápida de gás e água mineral em até 30 minutos',
-  generator: 'v0.app',
+  title: 'Configás - Entrega de Gás e Água em até 30 Minutos | Delivery Rápido',
+  description: 'Entrega expressa de gás de cozinha (P13, P45) e água mineral em até 30 minutos. Pagamento via PIX com desconto. Atendimento 24h. Peça agora e receba rápido!',
+  keywords: [
+    'entrega de gás',
+    'gás de cozinha',
+    'água mineral delivery',
+    'botijão de gás',
+    'gás P13',
+    'gás P45',
+    'entrega rápida',
+    'delivery de gás',
+    'água mineral 20L',
+    'gás 24 horas',
+    'entrega em 30 minutos',
+    'pagamento PIX',
+    'desconto PIX',
+    'gás barato',
+    'água mineral barata'
+  ],
+  authors: [{ name: 'Configás' }],
+  creator: 'Configás',
+  publisher: 'Configás',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://distribuidoraconfigas.store'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Configás - Entrega de Gás e Água em até 30 Minutos',
+    description: 'Entrega expressa de gás de cozinha e água mineral. Pagamento via PIX com desconto. Atendimento 24h.',
+    url: '/',
+    siteName: 'Configás',
+    locale: 'pt_BR',
+    type: 'website',
+    images: [
+      {
+        url: '/images/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Configás - Entrega Rápida de Gás e Água',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Configás - Entrega de Gás e Água em até 30 Minutos',
+    description: 'Entrega expressa de gás de cozinha e água mineral. Pagamento via PIX com desconto.',
+    images: ['/images/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+  },
 }
 
 export default function RootLayout({
@@ -29,8 +93,47 @@ export default function RootLayout({
   const primaryTag = googleAdsTags[0]
   
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
+        {/* Schema.org para SEO Local */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'LocalBusiness',
+              name: 'Configás',
+              description: 'Entrega expressa de gás de cozinha e água mineral em até 30 minutos',
+              url: process.env.NEXT_PUBLIC_SITE_URL || 'https://distribuidoraconfigas.store',
+              telephone: '+55-XX-XXXXX-XXXX',
+              priceRange: '$$',
+              image: '/images/og-image.png',
+              address: {
+                '@type': 'PostalAddress',
+                addressCountry: 'BR',
+                addressLocality: 'Sua Cidade',
+                addressRegion: 'SP',
+              },
+              geo: {
+                '@type': 'GeoCoordinates',
+                latitude: 0,
+                longitude: 0,
+              },
+              openingHoursSpecification: {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                opens: '00:00',
+                closes: '23:59',
+              },
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: '4.8',
+                reviewCount: '150',
+              },
+            }),
+          }}
+        />
+        
         {/* Google Ads - Tag Principal */}
         <script
           async

@@ -1,0 +1,20 @@
+# robots.txt para Configás
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://distribuidoraconfigas.store/sitemap.xml
+
+# Bloquear páginas administrativas
+Disallow: /admin
+Disallow: /api/
+Disallow: /segredoxx
+Disallow: /vipcolheita
+
+# Permitir rastreamento de imagens
+User-agent: Googlebot-Image
+Allow: /images/
+
+# Crawl delay (opcional)
+Crawl-delay: 1
