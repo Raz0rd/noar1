@@ -2638,10 +2638,12 @@ export default function CheckoutPage() {
                 <div>
                   <Input
                     type="text"
+                    inputMode="numeric"
                     placeholder="Digite seu CEP (ex: 12345-678)"
                     value={cep}
                     onChange={(e) => setCep(formatCep(e.target.value))}
                     className="text-center text-lg"
+                    style={{ fontSize: '16px' }}
                     maxLength={9}
                   />
                   {error && <p className="text-red-500 text-sm text-center mt-2">{error}</p>}
@@ -2837,19 +2839,20 @@ export default function CheckoutPage() {
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       E-mail *
                     </label>
-                    <Input
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={customerData.email}
-                      onChange={(e) => {
-                        const value = e.target.value.toLowerCase().trim()
-                        const newData = { ...customerData, email: value }
-                        setCustomerData(newData)
-                        saveCustomerData(newData)
-                      }}
-                      required
-                      className="text-sm sm:text-base"
-                    />
+                      <Input
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={customerData.email}
+                        onChange={(e) => {
+                          const value = e.target.value.toLowerCase().trim()
+                          const newData = { ...customerData, email: value }
+                          setCustomerData(newData)
+                          saveCustomerData(newData)
+                        }}
+                        required
+                        className="text-sm sm:text-base"
+                        style={{ fontSize: '16px' }}
+                      />
                   </div>
 
                   {/* Mostrar nome e CPF apenas se desconto NÃO foi aprovado */}
@@ -2882,20 +2885,20 @@ export default function CheckoutPage() {
                             Telefone/WhatsApp *
                           </label>
                           <Input
-                            type="text"
+                            type="tel"
+                            inputMode="numeric"
                             placeholder="(31) 99999-9999"
                             value={customerData.phone}
                             onChange={(e) => {
-                              const value = sanitizeInput(e.target.value)
-                              if (isInputSafe(value)) {
-                                const newData = { ...customerData, phone: formatPhone(value) }
-                                setCustomerData(newData)
-                                saveCustomerData(newData)
-                              }
+                              const value = formatPhone(e.target.value)
+                              const newData = { ...customerData, phone: value }
+                              setCustomerData(newData)
+                              saveCustomerData(newData)
                             }}
-                            className="text-sm sm:text-base"
-                            maxLength={15}
                             required
+                            className="text-sm sm:text-base"
+                            style={{ fontSize: '16px' }}
+                            maxLength={15}
                           />
                         </div>
                         <div>
@@ -2904,19 +2907,19 @@ export default function CheckoutPage() {
                           </label>
                           <Input
                             type="text"
+                            inputMode="numeric"
                             placeholder="000.000.000-00"
                             value={customerData.cpf}
                             onChange={(e) => {
-                              const value = sanitizeInput(e.target.value)
-                              if (isInputSafe(value)) {
-                                const newData = { ...customerData, cpf: formatCPF(value) }
-                                setCustomerData(newData)
-                                saveCustomerData(newData)
-                              }
+                              const value = formatCPF(e.target.value)
+                              const newData = { ...customerData, cpf: value }
+                              setCustomerData(newData)
+                              saveCustomerData(newData)
                             }}
-                            className="text-sm sm:text-base"
-                            maxLength={14}
                             required
+                            className="text-sm sm:text-base"
+                            style={{ fontSize: '16px' }}
+                            maxLength={14}
                           />
                         </div>
                       </div>
@@ -2955,6 +2958,7 @@ export default function CheckoutPage() {
                       </label>
                       <Input
                         type="text"
+                        inputMode="numeric"
                         placeholder="123"
                         value={customerData.number}
                         onChange={(e) => {
@@ -2966,6 +2970,7 @@ export default function CheckoutPage() {
                           }
                         }}
                         className="text-sm sm:text-base"
+                        style={{ fontSize: '16px' }}
                         required
                       />
                     </div>

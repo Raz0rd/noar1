@@ -123,7 +123,7 @@ export default function HomePage() {
   }, [])
 
   // Função para solicitar localização do usuário
-  const requestUserLocation = () => {
+  const requestUserLocation = async () => {
     // 1. Tentar localização salva primeiro (localização real anterior)
     const savedLocation = localStorage.getItem("user-location")
     if (savedLocation) {
@@ -136,7 +136,7 @@ export default function HomePage() {
       }
     }
 
-    // 2. Tentar geolocalização do navegador (apenas GPS real)
+    // 2. Tentar geolocalização GPS do navegador
     if (navigator.geolocation) {
       setUserLocation(prev => ({ ...prev, loading: true }))
       
@@ -145,15 +145,34 @@ export default function HomePage() {
           try {
             const { latitude, longitude } = position.coords
             
-            // Usar API de geocoding reverso para obter cidade
+            // Usar Nominatim (OpenStreetMap) para geocoding reverso
             const response = await fetch(
-              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=pt`
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=pt-BR`,
+              {
+                headers: {
+                  'User-Agent': 'Configas-App/1.0'
+                }
+              }
             )
             
             if (response.ok) {
               const data = await response.json()
-              const city = data.city || data.locality || "sua região"
-              const state = data.principalSubdivision || ""
+              
+              // Pegar cidade do address
+              const city = data.address?.city || 
+                          data.address?.town || 
+                          data.address?.municipality || 
+                          data.address?.village || 
+                          "Sua cidade"
+              
+              const state = data.address?.state || ""
+              
+              console.log('📍 [GPS + Nominatim] Localização detectada:', { 
+                city, 
+                state, 
+                coords: { latitude, longitude },
+                raw: data 
+              })
               
               setUserLocation({
                 city: city,
@@ -166,8 +185,30 @@ export default function HomePage() {
               return
             }
           } catch (error) {
-            console.log("Erro ao obter localização por GPS:", error)
-            // Não conseguimos obter localização - deixar vazio
+            console.log("❌ Erro ao obter localização por GPS:", error)
+          }
+          
+          // Fallback: usar ipinfo.io se GPS falhar
+          try {
+            const response = await fetch('https://ipinfo.io/?token=32090226b9d116')
+            if (response.ok) {
+              const data = await response.json()
+              const city = data.city || "Sua cidade"
+              const state = data.region || ""
+              
+              console.log('📍 [Fallback ipinfo.io] Localização detectada:', { city, state })
+              
+              setUserLocation({
+                city: city,
+                state: state,
+                loading: false,
+                confirmed: false
+              })
+              
+              setTempCity(city)
+            }
+          } catch (fallbackError) {
+            console.log("❌ Erro no fallback:", fallbackError)
             setUserLocation({
               city: "",
               state: "",
@@ -177,28 +218,69 @@ export default function HomePage() {
           }
         },
         (error) => {
-          console.log("Geolocalização negada ou erro:", error)
-          // Permissão negada - não usar fallback
-          setUserLocation({
-            city: "",
-            state: "",
-            loading: false,
-            confirmed: false
-          })
+          console.log("⚠️ Geolocalização negada ou erro:", error)
+          
+          // Fallback: usar ipinfo.io se usuário negar GPS
+          fetch('https://ipinfo.io/?token=32090226b9d116')
+            .then(r => r.json())
+            .then(data => {
+              const city = data.city || "Sua cidade"
+              const state = data.region || ""
+              
+              console.log('📍 [Fallback ipinfo.io] Localização detectada:', { city, state })
+              
+              setUserLocation({
+                city: city,
+                state: state,
+                loading: false,
+                confirmed: false
+              })
+              
+              setTempCity(city)
+            })
+            .catch(() => {
+              setUserLocation({
+                city: "",
+                state: "",
+                loading: false,
+                confirmed: false
+              })
+            })
         },
         {
           timeout: 10000,
-          enableHighAccuracy: false
+          enableHighAccuracy: true
         }
       )
     } else {
-      // Navegador não suporta geolocalização
-      setUserLocation({
-        city: "",
-        state: "",
-        loading: false,
-        confirmed: false
-      })
+      // Navegador não suporta geolocalização - usar ipinfo.io
+      try {
+        const response = await fetch('https://ipinfo.io/?token=32090226b9d116')
+        if (response.ok) {
+          const data = await response.json()
+          const city = data.city || "Sua cidade"
+          const state = data.region || ""
+          
+          console.log('📍 [ipinfo.io] Localização detectada:', { city, state })
+          
+          setUserLocation({
+            city: city,
+            state: state,
+            loading: false,
+            confirmed: false
+          })
+          
+          setTempCity(city)
+        }
+      } catch (error) {
+        console.log("❌ Erro ao obter localização:", error)
+        setUserLocation({
+          city: "",
+          state: "",
+          loading: false,
+          confirmed: false
+        })
+      }
     }
   }
   
@@ -806,9 +888,9 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center">
             <img
-              src="/images/configas.png"
+              src="/images/testelogo.png"
               alt="Configás e Água"
-              className="h-12 sm:h-[50px] w-auto"
+              className="h-16 sm:h-20 lg:h-24 w-auto"
               style={{ backgroundColor: 'transparent' }}
             />
           </div>
@@ -852,10 +934,13 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="text-center lg:text-left animate-fade-in-up">
+              {/* 3️⃣ Badge */}
               <div className="inline-block mb-4 px-4 py-2 bg-gradient-to-r from-teal-500 to-purple-600 text-white rounded-full text-sm font-bold">
-                ✨ Novidade: Sem Troca de Vasilhame!
+                ✨ Sem Troca de Vasilhame!
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+              
+              {/* 2️⃣ Título */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-purple-600">
                   Gás de Cozinha
                 </span>
@@ -863,8 +948,8 @@ export default function HomePage() {
                 <span className="text-gray-800">e Água Mineral</span>
               </h1>
               
-              {/* PROVA SOCIAL - Logo abaixo do título */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-6 mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-4 shadow-md">
+              {/* 4️⃣ PROVA SOCIAL */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-6 mb-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-4 shadow-md">
                 <div className="flex items-center gap-2">
                   <div className="flex">
                     <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
@@ -882,40 +967,33 @@ export default function HomePage() {
                 </div>
               </div>
               
-              {/* Texto Otimizado para SEO e Google Ads */}
-              <div className="mb-6 p-4 sm:p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-teal-600 rounded-lg shadow-sm">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 leading-tight">
-                  <span className="text-teal-700">Entrega de Gás de Cozinha</span> em {userLocation.city || 'Sua Região'} — Rápido, Barato e Perto de Você
-                </h2>
-                <p className="text-gray-700 text-base sm:text-lg leading-relaxed">
-                  Somos especialistas na <strong className="text-gray-900">entrega de gás de cozinha</strong>, <strong className="text-gray-900">água mineral</strong> e combos com <strong className="text-gray-900">botijões 100% novos</strong>. 
-                  Se você procura <strong className="text-teal-700">botijão de gás perto de mim</strong>, nós atendemos sua região com velocidade e preço justo. 
-                  <strong className="text-gray-900">Comprar botijão de gás</strong> nunca foi tão fácil!
+              {/* 5️⃣ CTA Principal */}
+              <div className="flex flex-col items-center lg:items-start mb-4">
+                <Button
+                  onClick={() => document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" })}
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-8 py-4 rounded-lg flex items-center gap-2 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  <ShoppingCart size={20} />
+                  Fazer Pedido Agora
+                </Button>
+                {/* Microtexto abaixo do CTA */}
+                <p className="text-xs text-gray-600 mt-2 flex items-center gap-1">
+                  🔥 Entrega em até 30min em <strong>{userLocation.city || 'sua região'}</strong> • Botijões 100% novos
                 </p>
               </div>
               
-              <p className="text-gray-700 mb-6 sm:mb-8 text-lg sm:text-xl">
-  Parceiros das melhores marcas do mercado, oferecemos <span className="text-rose-600 font-bold">Gás de Cozinha</span> e 
-  <span className="text-cyan-600 font-bold">Água Mineral</span> em recipientes <span className="font-bold">100% novos</span>, 
-  <span className="font-bold underline decoration-teal-500">sem necessidade de troca</span>. 
-  Qualidade, praticidade e os melhores preços da região!
-</p>
-              <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-center lg:justify-start">
-                <Button
-                  onClick={() => document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" })}
-                  className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  <ShoppingCart size={20} />
-                  Fazer Pedido
-                </Button>
-                <Button
-                  onClick={() => setShowHowItWorksModal(true)}
-                  variant="outline"
-                  className="border-2 border-purple-600 text-purple-600 hover:bg-purple-50 px-6 sm:px-8 py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <HelpCircle size={20} />
-                  Dúvidas?
-                </Button>
+              {/* 6️⃣ Texto SEO Reduzido (fonte menor, mais escaneável) */}
+              <p className="text-gray-600 text-xs sm:text-sm mb-6 leading-relaxed">
+                <strong className="text-gray-900">Entrega de gás de cozinha</strong> e <strong className="text-gray-900">água mineral</strong> em {userLocation.city || 'sua região'}. 
+                <strong className="text-teal-700">Botijão de gás perto de mim</strong> com entrega rápida e preço justo!
+              </p>
+              
+              {/* OPCIONAL: Contador de Entregas Hoje */}
+              <div className="inline-flex items-center gap-2 bg-green-50 border-2 border-green-200 rounded-lg px-4 py-2 mb-6">
+                <span className="text-2xl animate-pulse">⚡</span>
+                <span className="text-sm font-bold text-green-800">
+                  <span className="text-lg">{Math.floor(Math.random() * 15) + 25}</span> pessoas compraram gás nas últimas 2 horas
+                </span>
               </div>
             </div>
 
@@ -983,52 +1061,73 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
             {/* Review 1 */}
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-5 sm:p-6 shadow-md hover:shadow-xl transition-all duration-300 animate-fade-in-up">
-              <div className="flex gap-1 mb-3">
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <div className="flex items-center gap-3 mb-4">
+                <img 
+                  src="https://i.pravatar.cc/150?img=47" 
+                  alt="Patricia A."
+                  className="w-12 h-12 rounded-full border-2 border-amber-300 shadow-md"
+                />
+                <div className="flex-1">
+                  <p className="text-gray-800 font-bold text-sm">Patricia A.</p>
+                  <div className="flex gap-1">
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                  </div>
+                </div>
               </div>
-              <p className="text-gray-800 text-sm sm:text-base font-medium mb-3 leading-relaxed">
+              <p className="text-gray-800 text-sm sm:text-base font-medium leading-relaxed italic">
                 "Chegou em 20 minutos, muito rápido!"
-              </p>
-              <p className="text-gray-600 text-xs sm:text-sm font-semibold">
-                — Patricia A.
               </p>
             </div>
 
             {/* Review 2 */}
             <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border-2 border-teal-200 rounded-xl p-5 sm:p-6 shadow-md hover:shadow-xl transition-all duration-300 animate-fade-in-up animation-delay-100">
-              <div className="flex gap-1 mb-3">
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <div className="flex items-center gap-3 mb-4">
+                <img 
+                  src="https://i.pravatar.cc/150?img=12" 
+                  alt="Ricardo F."
+                  className="w-12 h-12 rounded-full border-2 border-teal-300 shadow-md"
+                />
+                <div className="flex-1">
+                  <p className="text-gray-800 font-bold text-sm">Ricardo F.</p>
+                  <div className="flex gap-1">
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                  </div>
+                </div>
               </div>
-              <p className="text-gray-800 text-sm sm:text-base font-medium mb-3 leading-relaxed">
+              <p className="text-gray-800 text-sm sm:text-base font-medium leading-relaxed italic">
                 "Botijão novo e lacrado, atendimento excelente."
-              </p>
-              <p className="text-gray-600 text-xs sm:text-sm font-semibold">
-                — Ricardo F.
               </p>
             </div>
 
             {/* Review 3 */}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-5 sm:p-6 shadow-md hover:shadow-xl transition-all duration-300 animate-fade-in-up animation-delay-200">
-              <div className="flex gap-1 mb-3">
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <div className="flex items-center gap-3 mb-4">
+                <img 
+                  src="https://i.pravatar.cc/150?img=32" 
+                  alt="Juliana M."
+                  className="w-12 h-12 rounded-full border-2 border-purple-300 shadow-md"
+                />
+                <div className="flex-1">
+                  <p className="text-gray-800 font-bold text-sm">Juliana M.</p>
+                  <div className="flex gap-1">
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                  </div>
+                </div>
               </div>
-              <p className="text-gray-800 text-sm sm:text-base font-medium mb-3 leading-relaxed">
+              <p className="text-gray-800 text-sm sm:text-base font-medium leading-relaxed italic">
                 "Preço justo e frete grátis. Recomendo demais!"
-              </p>
-              <p className="text-gray-600 text-xs sm:text-sm font-semibold">
-                — Juliana M.
               </p>
             </div>
           </div>

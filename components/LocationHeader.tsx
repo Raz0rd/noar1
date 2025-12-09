@@ -73,8 +73,7 @@ export default function LocationHeader() {
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm font-semibold">
-              📍 Entregas para <strong>{userLocation.city}</strong>
-              {userLocation.state && ` - ${userLocation.state}`}
+              Entrega de Gás de Cozinha em <strong>{userLocation.city}</strong> — Rápido, Barato e Perto de Você
             </span>
           </div>
           <span className="text-xs sm:text-sm opacity-90">

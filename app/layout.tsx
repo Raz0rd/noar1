@@ -10,24 +10,22 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Configás - Entrega de Gás e Água em até 30 Minutos | Delivery Rápido',
-  description: 'Entrega expressa de gás de cozinha (P13, P45) e água mineral em até 30 minutos. Pagamento via PIX com desconto. Atendimento 24h. Peça agora e receba rápido!',
+  title: 'Entrega de Gás de Cozinha em Caucaia | Frete Grátis e Rápido',
+  description: 'Gás de cozinha com entrega rápida em Caucaia. Botijões 13kg 100% novos, sem troca de vasilhame. Frete grátis e preço justo. Peça agora!',
   keywords: [
-    'entrega de gás',
     'gás de cozinha',
-    'água mineral delivery',
     'botijão de gás',
-    'gás P13',
-    'gás P45',
-    'entrega rápida',
-    'delivery de gás',
-    'água mineral 20L',
-    'gás 24 horas',
-    'entrega em 30 minutos',
-    'pagamento PIX',
-    'desconto PIX',
+    'entrega de gás',
+    'comprar botijão de gás',
+    'gás perto de mim',
+    'gás 13kg',
+    'gás Caucaia',
+    'frete grátis gás',
+    'gás urgente',
+    'entrega rápida de gás',
+    'botijão novo lacrado',
     'gás barato',
-    'água mineral barata'
+    'sem troca de vasilhame'
   ],
   authors: [{ name: 'Configás' }],
   creator: 'Configás',
@@ -42,8 +40,8 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'Configás - Entrega de Gás e Água em até 30 Minutos',
-    description: 'Entrega expressa de gás de cozinha e água mineral. Pagamento via PIX com desconto. Atendimento 24h.',
+    title: 'Entrega de Gás de Cozinha em Caucaia | Frete Grátis e Rápido',
+    description: 'Gás de cozinha com entrega rápida, botijões novos e frete grátis. Atendemos Caucaia e região. Peça agora!',
     url: '/',
     siteName: 'Configás',
     locale: 'pt_BR',
@@ -53,14 +51,14 @@ export const metadata: Metadata = {
         url: '/images/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Configás - Entrega Rápida de Gás e Água',
+        alt: 'Entrega de Gás de Cozinha em Caucaia',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Configás - Entrega de Gás e Água em até 30 Minutos',
-    description: 'Entrega expressa de gás de cozinha e água mineral. Pagamento via PIX com desconto.',
+    title: 'Entrega de Gás de Cozinha em Caucaia | Frete Grátis e Rápido',
+    description: 'Gás de cozinha com entrega rápida, botijões novos e frete grátis. Atendemos Caucaia e região. Peça agora!',
     images: ['/images/og-image.png'],
   },
   robots: {
@@ -95,6 +93,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        {/* Favicon - Múltiplos tamanhos */}
+        <link rel="icon" type="image/x-icon" href="/images/favico.ico" sizes="any" />
+        <link rel="shortcut icon" href="/images/favico.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/images/favico.ico" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/images/favico.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/images/favico.ico" />
+        
         {/* Schema.org para SEO Local */}
         <script
           type="application/ld+json"
