@@ -2825,7 +2825,7 @@ export default function CheckoutPage() {
             )}
 
             {/* Customer Data Form - Esconder após preencher */}
-            {(!customerData.name || !customerData.phone || !customerData.cpf || !customerData.number) && (
+            {(!customerData.name || !customerData.email || !customerData.phone || !customerData.cpf || !customerData.number) && (
             <Card>
               <CardHeader className="pb-3 sm:pb-4">
                 <CardTitle className="text-base sm:text-lg">Confirme seus dados para entrega</CardTitle>
