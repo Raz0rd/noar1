@@ -83,10 +83,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   // Suporta múltiplas tags separadas por vírgula
-  const googleAdsTags = (process.env.NEXT_PUBLIC_GOOGLE_ADS_TAGS || 'AW-17780793164')
-    .split(',')
-    .map(tag => tag.trim())
-    .filter(tag => tag.length > 0)
+  const googleAdsTags = process.env.NEXT_PUBLIC_GOOGLE_ADS_TAGS
+    ? process.env.NEXT_PUBLIC_GOOGLE_ADS_TAGS.split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0)
+    : []
   
   const primaryTag = googleAdsTags[0]
   
@@ -140,22 +141,26 @@ export default function RootLayout({
         />
         
         {/* Google Ads - Tag Principal */}
-        <script
-          async
-          src={`https://www.googletagmanager.com/gtag/js?id=${primaryTag}`}
-        ></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              
-              // Configurar todas as tags
-              ${googleAdsTags.map(tag => `gtag('config', '${tag}');`).join('\n              ')}
-            `,
-          }}
-        />
+        {primaryTag && (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${primaryTag}`}
+            ></script>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  
+                  // Configurar todas as tags
+                  ${googleAdsTags.map(tag => `gtag('config', '${tag}');`).join('\n                  ')}
+                `,
+              }}
+            />
+          </>
+        )}
         
         {/* UTMify - Script de captura de UTMs (OBRIGATÓRIO) */}
         <script
