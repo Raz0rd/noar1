@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://distribuidoraconfigas.store'),
+  metadataBase: process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL) : undefined,
   alternates: {
     canonical: '/',
   },
@@ -109,8 +109,8 @@ export default function RootLayout({
               '@type': 'LocalBusiness',
               name: 'Configás',
               description: 'Entrega expressa de gás de cozinha e água mineral em até 30 minutos',
-              url: process.env.NEXT_PUBLIC_SITE_URL || 'https://distribuidoraconfigas.store',
-              telephone: '+55-XX-XXXXX-XXXX',
+              url: process.env.NEXT_PUBLIC_SITE_URL,
+              telephone: '+55-91-946532477',
               priceRange: '$$',
               image: '/images/og-image.png',
               address: {
