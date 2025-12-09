@@ -423,15 +423,27 @@ export default function HomePage() {
           <span className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">{price}</span>
         </div>
 
-        {/* Badges de Benefícios */}
+        {/* Badges de Benefícios e Urgência */}
         <div className="flex flex-wrap gap-2 mb-3">
-          <div className="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-md text-xs font-semibold">
+          <div className="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-md text-xs font-semibold border border-green-200">
             <Bike size={12} />
             Frete Grátis
           </div>
-          <div className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-semibold">
-            ⚡ {stock[name] || 0} un.
+          <div className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2 py-1 rounded-md text-xs font-bold border border-orange-200 animate-pulse">
+            🔥 {stock[name] || 0} disponíveis
           </div>
+          {isBestSeller && (
+            <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-semibold border border-blue-200">
+              📦 Mais vendido hoje
+            </div>
+          )}
+        </div>
+        
+        {/* Badge de Urgência - Entrega Rápida */}
+        <div className="mb-3 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-lg p-2">
+          <p className="text-xs text-teal-800 font-bold text-center">
+            ⚡ Entrega em até 30min garantida
+          </p>
         </div>
         
         {/* Descrição Curta */}
@@ -843,13 +855,45 @@ export default function HomePage() {
               <div className="inline-block mb-4 px-4 py-2 bg-gradient-to-r from-teal-500 to-purple-600 text-white rounded-full text-sm font-bold">
                 ✨ Novidade: Sem Troca de Vasilhame!
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 leading-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-purple-600">
                   Gás de Cozinha
                 </span>
                 <br />
                 <span className="text-gray-800">e Água Mineral</span>
               </h1>
+              
+              {/* PROVA SOCIAL - Logo abaixo do título */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-6 mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-4 shadow-md">
+                <div className="flex items-center gap-2">
+                  <div className="flex">
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                  </div>
+                  <span className="text-lg font-bold text-gray-800">4.9/5</span>
+                </div>
+                <div className="h-8 w-px bg-amber-300 hidden sm:block"></div>
+                <div className="text-center sm:text-left">
+                  <p className="text-sm font-bold text-gray-800">Mais de 1.500 entregas realizadas</p>
+                  <p className="text-xs text-gray-600">97% entregues em menos de 30min</p>
+                </div>
+              </div>
+              
+              {/* Texto Otimizado para SEO e Google Ads */}
+              <div className="mb-6 p-4 sm:p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-teal-600 rounded-lg shadow-sm">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 leading-tight">
+                  <span className="text-teal-700">Entrega de Gás de Cozinha</span> em {userLocation.city || 'Sua Região'} — Rápido, Barato e Perto de Você
+                </h2>
+                <p className="text-gray-700 text-base sm:text-lg leading-relaxed">
+                  Somos especialistas na <strong className="text-gray-900">entrega de gás de cozinha</strong>, <strong className="text-gray-900">água mineral</strong> e combos com <strong className="text-gray-900">botijões 100% novos</strong>. 
+                  Se você procura <strong className="text-teal-700">botijão de gás perto de mim</strong>, nós atendemos sua região com velocidade e preço justo. 
+                  <strong className="text-gray-900">Comprar botijão de gás</strong> nunca foi tão fácil!
+                </p>
+              </div>
+              
               <p className="text-gray-700 mb-6 sm:mb-8 text-lg sm:text-xl">
   Parceiros das melhores marcas do mercado, oferecemos <span className="text-rose-600 font-bold">Gás de Cozinha</span> e 
   <span className="text-cyan-600 font-bold">Água Mineral</span> em recipientes <span className="font-bold">100% novos</span>, 
@@ -927,12 +971,98 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Customer Reviews Section */}
+      <section className="bg-white py-12 sm:py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8 sm:mb-12 animate-fade-in-up">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+              O que nossos clientes dizem <span className="text-3xl">🧡</span>
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
+            {/* Review 1 */}
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-5 sm:p-6 shadow-md hover:shadow-xl transition-all duration-300 animate-fade-in-up">
+              <div className="flex gap-1 mb-3">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              </div>
+              <p className="text-gray-800 text-sm sm:text-base font-medium mb-3 leading-relaxed">
+                "Chegou em 20 minutos, muito rápido!"
+              </p>
+              <p className="text-gray-600 text-xs sm:text-sm font-semibold">
+                — Patricia A.
+              </p>
+            </div>
+
+            {/* Review 2 */}
+            <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border-2 border-teal-200 rounded-xl p-5 sm:p-6 shadow-md hover:shadow-xl transition-all duration-300 animate-fade-in-up animation-delay-100">
+              <div className="flex gap-1 mb-3">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              </div>
+              <p className="text-gray-800 text-sm sm:text-base font-medium mb-3 leading-relaxed">
+                "Botijão novo e lacrado, atendimento excelente."
+              </p>
+              <p className="text-gray-600 text-xs sm:text-sm font-semibold">
+                — Ricardo F.
+              </p>
+            </div>
+
+            {/* Review 3 */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-5 sm:p-6 shadow-md hover:shadow-xl transition-all duration-300 animate-fade-in-up animation-delay-200">
+              <div className="flex gap-1 mb-3">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              </div>
+              <p className="text-gray-800 text-sm sm:text-base font-medium mb-3 leading-relaxed">
+                "Preço justo e frete grátis. Recomendo demais!"
+              </p>
+              <p className="text-gray-600 text-xs sm:text-sm font-semibold">
+                — Juliana M.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Products Section */}
       <section id="produtos" className="bg-gray-100 py-12 sm:py-16 lg:py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12 sm:mb-16 animate-fade-in-up">
+          <div className="text-center mb-8 sm:mb-12 animate-fade-in-up">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">Nossos Produtos</h2>
             <div className="w-24 h-1 bg-gradient-to-r from-teal-500 to-purple-500 mx-auto rounded-full"></div>
+          </div>
+          
+          {/* Banner de Urgência */}
+          <div className="max-w-4xl mx-auto mb-8 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-2xl shadow-2xl p-6 sm:p-8 text-white animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex-1 text-center sm:text-left">
+                <h3 className="text-2xl sm:text-3xl font-extrabold mb-2 flex items-center justify-center sm:justify-start gap-2">
+                  <span className="animate-bounce">🔥</span>
+                  PROMOÇÃO RELÂMPAGO
+                </h3>
+                <p className="text-lg sm:text-xl font-semibold mb-1">
+                  Últimas unidades para entrega IMEDIATA
+                </p>
+                <p className="text-sm sm:text-base opacity-90">
+                  ⚡ Preço especial válido HOJE • 📦 Estoque limitado
+                </p>
+              </div>
+              <div className="bg-white text-red-600 px-6 py-3 rounded-xl font-bold text-center shadow-lg">
+                <p className="text-xs uppercase tracking-wide">Aproveite</p>
+                <p className="text-2xl">AGORA</p>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto">
