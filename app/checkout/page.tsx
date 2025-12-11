@@ -1395,6 +1395,21 @@ export default function CheckoutPage() {
       window.gtag('event', 'purchase', purchasePayload);
       
       console.log(`✅ [GOOGLE ADS] Evento de purchase enviado para ${googleAdsTags.length} tag(s)!`)
+
+      // Enviar conversão específica com Label se configurada
+      const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION
+      if (conversionLabel) {
+        console.log(`🎯 [GOOGLE ADS] Enviando conversão específica para: ${conversionLabel}`)
+        
+        window.gtag('event', 'conversion', {
+          'send_to': conversionLabel,
+          'value': conversionValueBRL,
+          'currency': 'BRL',
+          'transaction_id': transactionId
+        })
+        
+        console.log(`✅ [GOOGLE ADS] Conversão específica enviada!`)
+      }
       
       // Marcar que conversão foi reportada
       setConversionReported(true);
