@@ -76,6 +76,17 @@ export async function POST(request: NextRequest) {
           }
         }
         
+        // Garantir que todas as propriedades UTM existam como null se não tiverem valor
+        const normalizedTrackingParams = {
+          src: utmifyTrackingParams.src || null,
+          sck: utmifyTrackingParams.sck || null,
+          utm_source: utmifyTrackingParams.utm_source || null,
+          utm_campaign: utmifyTrackingParams.utm_campaign || null,
+          utm_medium: utmifyTrackingParams.utm_medium || null,
+          utm_content: utmifyTrackingParams.utm_content || null,
+          utm_term: utmifyTrackingParams.utm_term || null
+        }
+        
         // Criar payload UTMify (usar dados salvos se existirem)
         const utmifyPayload = {
           orderId: transactionId.toString(),
@@ -108,7 +119,7 @@ export async function POST(request: NextRequest) {
             quantity: 1,
             priceInCents: amount
           }],
-          trackingParameters: utmifyTrackingParams,
+          trackingParameters: normalizedTrackingParams,
           commission: {
             totalPriceInCents: amount,
             gatewayFeeInCents: Math.round(amount * 0.04),

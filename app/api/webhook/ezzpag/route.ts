@@ -57,13 +57,13 @@ export async function POST(request: NextRequest) {
             priceInCents: amount
           }],
           trackingParameters: {
-            src: null,
-            sck: null,
-            utm_source: null,
-            utm_campaign: null,
-            utm_medium: null,
-            utm_content: null,
-            utm_term: null
+            src: body.metadata?.trackingParameters?.src || null,
+            sck: body.metadata?.trackingParameters?.sck || null,
+            utm_source: body.metadata?.trackingParameters?.utm_source || null,
+            utm_campaign: body.metadata?.trackingParameters?.utm_campaign || null,
+            utm_medium: body.metadata?.trackingParameters?.utm_medium || null,
+            utm_content: body.metadata?.trackingParameters?.utm_content || null,
+            utm_term: body.metadata?.trackingParameters?.utm_term || null
           },
           commission: {
             totalPriceInCents: amount,

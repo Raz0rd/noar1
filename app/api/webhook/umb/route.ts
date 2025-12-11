@@ -74,14 +74,14 @@ export async function POST(request: NextRequest) {
             quantity: 1,
             priceInCents: amount
           }],
-          trackingParameters: orderData?.trackingParameters || {
-            src: null,
-            sck: null,
-            utm_source: null,
-            utm_campaign: null,
-            utm_medium: null,
-            utm_content: null,
-            utm_term: null
+          trackingParameters: {
+            src: orderData?.trackingParameters?.src || null,
+            sck: orderData?.trackingParameters?.sck || null,
+            utm_source: orderData?.trackingParameters?.utm_source || null,
+            utm_campaign: orderData?.trackingParameters?.utm_campaign || null,
+            utm_medium: orderData?.trackingParameters?.utm_medium || null,
+            utm_content: orderData?.trackingParameters?.utm_content || null,
+            utm_term: orderData?.trackingParameters?.utm_term || null
           },
           commission: {
             totalPriceInCents: amount,
