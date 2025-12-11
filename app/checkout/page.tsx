@@ -638,6 +638,7 @@ export default function CheckoutPage() {
 
   const handleCustomerDataSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     if (customerData.name && customerData.email && customerData.phone && customerData.number) {
       // Salvar dados do cliente no localStorage
       saveCustomerData(customerData)
@@ -2678,8 +2679,8 @@ export default function CheckoutPage() {
         {/* Step 2: Customer Data */}
         {step === 2 && addressData && (
           <div className="space-y-4 sm:space-y-6">
-            {/* Address Confirmation - Esconder após preencher dados */}
-            {(!customerData.name || !customerData.phone || !customerData.cpf || !customerData.number) && (
+            {/* Address Confirmation - Esconder após gerar PIX */}
+            {!pixData && (
             <Card>
               <CardHeader className="pb-3 sm:pb-4">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -2714,8 +2715,8 @@ export default function CheckoutPage() {
             </Card>
             )}
 
-            {/* Desconto Aprovado - Esconder após preencher dados */}
-            {(!customerData.name || !customerData.phone || !customerData.cpf || !customerData.number) && discountApproved && customerFound && (
+            {/* Desconto Aprovado - Esconder após gerar PIX */}
+            {!pixData && discountApproved && customerFound && (
               <Card className="border-2 border-green-400">
                 <CardContent className="pt-4 sm:pt-6">
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
@@ -2841,8 +2842,8 @@ export default function CheckoutPage() {
               </Card>
             )}
 
-            {/* Customer Data Form - Esconder após preencher */}
-            {(!customerData.name || !customerData.email || !customerData.phone || !customerData.cpf || !customerData.number) && (
+            {/* Customer Data Form - Esconder após gerar PIX */}
+            {!pixData && (
             <Card>
               <CardHeader className="pb-3 sm:pb-4">
                 <CardTitle className="text-base sm:text-lg">Confirme seus dados para entrega</CardTitle>
@@ -2863,6 +2864,11 @@ export default function CheckoutPage() {
                           const newData = { ...customerData, email: value }
                           setCustomerData(newData)
                           saveCustomerData(newData)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                          }
                         }}
                         required
                         className="text-sm sm:text-base"
@@ -2889,6 +2895,11 @@ export default function CheckoutPage() {
                               saveCustomerData(newData)
                             }
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                            }
+                          }}
                           className="text-sm sm:text-base"
                           required
                         />
@@ -2910,6 +2921,11 @@ export default function CheckoutPage() {
                               setCustomerData(newData)
                               saveCustomerData(newData)
                             }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                              }
+                            }}
                             required
                             className="text-sm sm:text-base"
                             style={{ fontSize: '16px' }}
@@ -2930,6 +2946,11 @@ export default function CheckoutPage() {
                               const newData = { ...customerData, cpf: value }
                               setCustomerData(newData)
                               saveCustomerData(newData)
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                              }
                             }}
                             required
                             className="text-sm sm:text-base"
@@ -2959,6 +2980,11 @@ export default function CheckoutPage() {
                             saveCustomerData(newData)
                           }
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                          }
+                        }}
                         className="text-sm sm:text-base"
                         maxLength={15}
                         required
@@ -2984,6 +3010,11 @@ export default function CheckoutPage() {
                             saveCustomerData(newData)
                           }
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                          }
+                        }}
                         className="text-sm sm:text-base"
                         style={{ fontSize: '16px' }}
                         required
@@ -3003,6 +3034,11 @@ export default function CheckoutPage() {
                             const newData = { ...customerData, complement: value }
                             setCustomerData(newData)
                             saveCustomerData(newData)
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
                           }
                         }}
                         className="text-sm sm:text-base"
@@ -3222,8 +3258,8 @@ export default function CheckoutPage() {
             </Card>
             )}
 
-            {/* Seleção de Forma de Pagamento - Aparecer após preencher dados */}
-            {customerData.name && customerData.phone && customerData.cpf && customerData.number && (
+            {/* Seleção de Forma de Pagamento - Aparecer após preencher dados e antes de gerar PIX */}
+            {customerData.name && customerData.phone && customerData.cpf && customerData.number && !pixData && (
               <div className="border-2 border-purple-200 rounded-lg p-4 bg-gradient-to-br from-purple-50 to-pink-50">
                 <h4 className="font-bold text-purple-800 text-sm mb-3 flex items-center gap-2">
                   <CreditCard className="w-5 h-5" />
