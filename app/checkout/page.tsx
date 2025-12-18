@@ -194,14 +194,15 @@ export default function CheckoutPage() {
         const hoursDiff = (now - paymentTime) / (1000 * 60 * 60)
         
         if (hoursDiff < 24) {
-          // Verificar se é produto de gás e se já pagou os 70% mas ainda não gerou o PIX de 30%
+          // Verificar se é produto de gás/combo e se já pagou os 60% mas ainda não gerou o PIX de 40%
           const isGas = payment.pixData?.items?.[0]?.title?.toLowerCase().includes('gás') || 
-                        payment.pixData?.items?.[0]?.title?.toLowerCase().includes('botijão')
+                        payment.pixData?.items?.[0]?.title?.toLowerCase().includes('botijão') ||
+                        payment.pixData?.items?.[0]?.title?.toLowerCase().includes('combo')
           const hasTaxPix = localStorage.getItem('tax-pix-transaction')
           
           if (isGas && !hasTaxPix) {
-            // Pagou 70% mas ainda não gerou o PIX de 30%
-            console.log('🔔 DETECTADO: Pagamento de 70% completo, falta pagar 30%')
+            // Pagou 60% mas ainda não gerou o PIX de 40%
+            console.log('🔔 DETECTADO: Pagamento de 60% completo, falta pagar 40%')
             setPixData(payment.pixData)
             setCustomerData(payment.customerData)
             setAddressData(payment.addressData)
@@ -227,7 +228,7 @@ export default function CheckoutPage() {
         localStorage.removeItem('paid-order')
       }
     } else {
-      // Verificar se há PIX de impostos (30%) pendente
+      // Verificar se há PIX de impostos (40%) pendente
       const pendingTaxPix = localStorage.getItem('tax-pix-transaction')
       if (pendingTaxPix) {
         try {
@@ -803,7 +804,7 @@ export default function CheckoutPage() {
         qrcodeUrl: 'https://example.com/qrcode-simulado'
       },
       items: [{
-        title: requiresSplitPayment() ? `${productName} - Primeira Parte (70%)` : productName,
+        title: requiresSplitPayment() ? `${productName} - Primeira Parte (60%)` : productName,
         quantity: 1,
         unitPrice: paymentAmount
       }]
@@ -858,10 +859,10 @@ export default function CheckoutPage() {
         }
       }
       
-      // Cobrar 60% para gás (primeira parte), 100% para outros produtos
+      // Cobrar 60% para gás/combo (primeira parte), 100% para água pura
       let pixAmount = totalPrice
       if (requiresSplitPayment()) {
-        pixAmount = Math.round(totalPrice * 0.60) // 60% para gás
+        pixAmount = Math.round(totalPrice * 0.60) // 60% para gás ou combo
       }
       
       let productTitle = productName
@@ -990,7 +991,7 @@ export default function CheckoutPage() {
       console.log(`🎯 [Gateway] Usando: ${mappedName}`)
       console.log(`📡 [GeneratePix] Endpoint: ${gateway.endpoint}`)
       console.log(`💰 [GeneratePix] Valor total: ${totalPrice}`)
-      console.log(`💳 [GeneratePix] Valor PIX (70%): ${pixAmount}`)
+      console.log(`💳 [GeneratePix] Valor PIX (60%): ${pixAmount}`)
       console.log(`📦 [GeneratePix] Produto: ${productCode}`)
       
       // Rastrear uso do gateway
@@ -1093,10 +1094,10 @@ export default function CheckoutPage() {
     }
   }
 
-  // Função para gerar PIX dos impostos (30%)
+  // Função para gerar PIX dos impostos (40%)
   const generateTaxPix = async () => {
     try {
-      console.log('🚀 Iniciando geração do PIX de 30%...')
+      console.log('🚀 Iniciando geração do PIX de 40%...')
       setPixLoading(true)
       setPixError("")
       
@@ -1186,7 +1187,7 @@ export default function CheckoutPage() {
       
       // 🔥 IMPORTANTE: Atualizar pixData para exibir o QR Code do segundo pagamento
       setPixData(taxPixResponse)
-      console.log('🔄 pixData atualizado com o PIX de 30%')
+      console.log('🔄 pixData atualizado com o PIX de 40%')
       
       // Salvar no localStorage
       localStorage.setItem('tax-pix-transaction', JSON.stringify({
@@ -1195,7 +1196,7 @@ export default function CheckoutPage() {
         addressData,
         createdAt: new Date().toISOString()
       }))
-      console.log('💾 PIX de 30% salvo no localStorage')
+      console.log('💾 PIX de 40% salvo no localStorage')
       
       // Enviar para UTMify - segundo PIX gerado (waiting_payment)
       // Criar payload completo para o segundo pagamento (40%)
@@ -1205,7 +1206,7 @@ export default function CheckoutPage() {
       console.log('🔄 Iniciando polling do PIX de 40%...')
       startPaymentPolling(taxPixResponse.id)
     } catch (err) {
-      console.error('❌ Erro geral ao gerar PIX de 30%:', err)
+      console.error('❌ Erro geral ao gerar PIX de 40%:', err)
       setPixError("Erro ao gerar PIX dos impostos. Tente novamente.")
     } finally {
       setPixLoading(false)
@@ -1245,6 +1246,16 @@ export default function CheckoutPage() {
            productName.toLowerCase().includes("botijões")
   }
 
+  // Verificar se o produto é combo (tem gás + água)
+  const isComboProduct = () => {
+    return productName.toLowerCase().includes("combo")
+  }
+
+  // Verificar se é água pura (sem gás)
+  const isPureWaterProduct = () => {
+    return isWaterProduct() && !isComboProduct() && !isGasProduct()
+  }
+
   // Obter imagem do produto
   const getProductImage = () => {
     const productImageMap: { [key: string]: string } = {
@@ -1269,20 +1280,27 @@ export default function CheckoutPage() {
     return basePrice + kitPrice
   }
 
-  // Verificar se produto requer pagamento parcelado (70% + 30%)
+  // Verificar se produto requer pagamento parcelado (60% + 40%)
+  // Gás e Combos (que têm gás) = split payment
+  // Água pura (sem gás) = pagamento integral
   const requiresSplitPayment = () => {
-    return isGasProduct()
+    // Se for água pura (sem gás), não cobra split
+    if (isPureWaterProduct()) {
+      return false
+    }
+    // Se tem gás OU é combo (que tem gás), cobra split
+    return isGasProduct() || isComboProduct()
   }
 
-  // Calcular valor da primeira parte (70% para gás, 100% para outros)
+  // Calcular valor da primeira parte (60% para gás/combo, 100% para água pura)
   const getFirstPaymentAmount = () => {
     const totalPrice = getTotalPrice()
     const finalPrice = totalPrice - pixDiscount // Valor após desconto
     
     if (requiresSplitPayment()) {
-      return Math.round(finalPrice * 0.60) // 60% do valor
+      return Math.round(finalPrice * 0.60) // 60% do valor (gás ou combo)
     }
-    return finalPrice // 100% para não-gás
+    return finalPrice // 100% para água pura
   }
 
   // Calcular valor da taxa (40% do total)
@@ -1469,10 +1487,10 @@ export default function CheckoutPage() {
             
             if (savedTransaction) {
               isTaxPayment = true
-              console.log('💰 Detectado pagamento de impostos (30%)')
+              console.log('💰 Detectado pagamento de impostos (40%)')
             } else {
               savedTransaction = localStorage.getItem('current-pix-transaction')
-              console.log('💰 Detectado pagamento principal (70% ou 100%)')
+              console.log('💰 Detectado pagamento principal (60% ou 100%)')
             }
             
             if (!savedTransaction) {
@@ -1508,10 +1526,10 @@ export default function CheckoutPage() {
               paidAt: new Date().toISOString()
             }))
             
-            // Verificar se é pagamento de impostos (30%) ou pagamento principal
+            // Verificar se é pagamento de impostos (40%) ou pagamento principal
             if (isTaxPayment) {
-              // Segundo pagamento (30%) concluído
-              console.log('✅ Segundo pagamento (30%) detectado como PAID!')
+              // Segundo pagamento (40%) concluído
+              console.log('✅ Segundo pagamento (40%) detectado como PAID!')
               
               // Reportar conversão Google Ads do segundo pagamento
               reportPurchaseConversion(updatedPixData.amount, updatedPixData.id.toString())
@@ -1528,7 +1546,7 @@ export default function CheckoutPage() {
               localStorage.removeItem('tax-pix-transaction')
               localStorage.removeItem('utmify-tax-payload')
               
-              console.log('🎉 PAGAMENTO COMPLETO! Ambas as partes pagas (70% + 30%)')
+              console.log('🎉 PAGAMENTO COMPLETO! Ambas as partes pagas (60% + 40%)')
               
               // Mostrar modal de upsell opcional
               console.log('⏰ Agendando modal de upsell em 2 segundos...')
@@ -1539,8 +1557,8 @@ export default function CheckoutPage() {
                 console.log('✅ setShowUpsellModal(true) executado')
               }, 2000)
             } else if (requiresSplitPayment()) {
-              // Primeiro pagamento (70%) concluído
-              console.log('✅ Primeiro pagamento (70%) detectado como PAID!')
+              // Primeiro pagamento (60%) concluído
+              console.log('✅ Primeiro pagamento (60%) detectado como PAID!')
               console.log('🔍 Estado atual - firstPaymentCompleted:', firstPaymentCompleted)
               console.log('🔍 Estado atual - showTaxPaymentModal:', showTaxPaymentModal)
               console.log('🔍 Verificando se já existe tax-pix-transaction...')
@@ -1549,18 +1567,18 @@ export default function CheckoutPage() {
               console.log('🔍 existingTaxPix:', existingTaxPix ? 'SIM' : 'NÃO')
               
               if (!existingTaxPix) {
-                // Ainda não gerou o PIX de 30%
-                console.log('🎯 Primeira vez detectando pagamento de 70%, mostrando modal...')
+                // Ainda não gerou o PIX de 40%
+                console.log('🎯 Primeira vez detectando pagamento de 60%, mostrando modal...')
                 setFirstPaymentCompleted(true)
                 
                 // Reportar conversão Google Ads do primeiro pagamento
                 reportPurchaseConversion(updatedPixData.amount, updatedPixData.id.toString())
                 
-                // Enviar para UTMify PAID da primeira parte (70%)
+                // Enviar para UTMify PAID da primeira parte (60%)
                 await sendToUtmify('paid')
                 
                 // Mostrar modal para gerar segundo PIX
-                console.log('🚨 ABRINDO MODAL DE IMPOSTOS (30%)...')
+                console.log('🚨 ABRINDO MODAL DE IMPOSTOS (40%)...')
                 console.log('🚨 Chamando setShowTaxPaymentModal(true)...')
                 setShowTaxPaymentModal(true)
                 
@@ -1569,7 +1587,7 @@ export default function CheckoutPage() {
                   console.log('🔍 Verificação após 1s - showTaxPaymentModal:', showTaxPaymentModal)
                 }, 1000)
               } else {
-                console.log('⚠️ PIX de 30% já foi gerado anteriormente, aguardando pagamento...')
+                console.log('⚠️ PIX de 40% já foi gerado anteriormente, aguardando pagamento...')
               }
               
               // Não limpar current-pix-transaction ainda, pois ainda falta o segundo pagamento
@@ -2042,13 +2060,13 @@ export default function CheckoutPage() {
 
   // Enviar pending para UTMify quando PIX for gerado
   useEffect(() => {
-    // Verificar se é um PIX válido e se é o PIX principal (70%)
+    // Verificar se é um PIX válido e se é o PIX principal (60%)
     const currentPixStr = localStorage.getItem('current-pix-transaction')
     const taxPixStr = localStorage.getItem('tax-pix-transaction')
     
     if (!pixData || !currentPixStr) return
     
-    // Verificar se o pixData atual é o PIX principal (70%) ou o PIX de impostos (30%)
+    // Verificar se o pixData atual é o PIX principal (60%) ou o PIX de impostos (40%)
     const currentPixData = JSON.parse(currentPixStr)
     const isMainPix = pixData.id === currentPixData.pixData?.id
     
@@ -2056,16 +2074,16 @@ export default function CheckoutPage() {
     const hasTaxPix = !!taxPixStr
     
     // Só enviar waiting_payment se:
-    // 1. É o PIX principal (70%)
+    // 1. É o PIX principal (60%)
     // 2. Status é waiting_payment
     // 3. Ainda não foi enviado
-    // 4. NÃO é o PIX de impostos (30%)
+    // 4. NÃO é o PIX de impostos (40%)
     if (pixData && 
-        isMainPix && // Garantir que é o PIX principal (70%)
+        isMainPix && // Garantir que é o PIX principal (60%)
         (pixData.status === 'waiting_payment' || pixData.status === 'WAITING_PAYMENT') && 
         !utmifySent.pending
     ) {
-      console.log('🚀 [UTMIFY] Disparando waiting_payment via useEffect (PIX 70%)')
+      console.log('🚀 [UTMIFY] Disparando waiting_payment via useEffect (PIX 60%)')
       sendToUtmify('waiting_payment')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2333,7 +2351,7 @@ export default function CheckoutPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Modal de Pagamento de Impostos (30%) - Compacto */}
+      {/* Modal de Pagamento de Impostos (40%) - Compacto */}
       <Dialog open={showTaxPaymentModal} onOpenChange={setShowTaxPaymentModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -2346,10 +2364,10 @@ export default function CheckoutPage() {
             {/* Resumo Compacto */}
             <div className="bg-green-50 border border-green-300 rounded-lg p-3 text-center">
               <p className="text-sm font-bold text-green-700 mb-1">
-                Parabéns! 70% pago 🎊
+                Parabéns! 60% pago 🎊
               </p>
               <p className="text-xs text-gray-600">
-                Falta apenas os <strong>impostos (30%)</strong>
+                Falta apenas os <strong>impostos (40%)</strong>
               </p>
             </div>
 
@@ -2357,11 +2375,11 @@ export default function CheckoutPage() {
             <div className="bg-white border border-gray-200 rounded-lg p-3">
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">✅ Já pago (70%):</span>
+                  <span className="text-gray-600">✅ Já pago (60%):</span>
                   <strong className="text-green-600">{formatPrice(getFirstPaymentAmount())}</strong>
                 </div>
                 <div className="flex justify-between border-t pt-1.5">
-                  <span className="text-gray-600">📊 Impostos (30%):</span>
+                  <span className="text-gray-600">📊 Impostos (40%):</span>
                   <strong className="text-orange-600">{formatPrice(getTaxPaymentAmount())}</strong>
                 </div>
                 <div className="flex justify-between border-t pt-1.5 font-bold">
@@ -2381,7 +2399,7 @@ export default function CheckoutPage() {
             {/* Botão */}
             <Button
               onClick={async () => {
-                console.log('🔥 Botão clicado! Gerando PIX de 30%...')
+                console.log('🔥 Botão clicado! Gerando PIX de 40%...')
                 await generateTaxPix()
                 setShowTaxPaymentModal(false)
               }}
@@ -2621,13 +2639,13 @@ export default function CheckoutPage() {
                   <div className="text-2xl sm:text-3xl font-bold text-blue-600">
                     {formatPrice(getTotalPrice())}
                   </div>
-                  {isGasProduct() && (
+                  {requiresSplitPayment() && (
                     <div className="flex flex-col gap-1">
                       <span className="text-xs sm:text-sm text-green-600 font-semibold bg-green-50 px-2 py-1 rounded">
-                        ✅ 70% agora
+                        ✅ 60% agora
                       </span>
                       <span className="text-xs sm:text-sm text-orange-600 font-semibold bg-orange-50 px-2 py-1 rounded">
-                        📊 30% depois (impostos)
+                        📊 40% depois (impostos)
                       </span>
                     </div>
                   )}
@@ -3270,21 +3288,21 @@ export default function CheckoutPage() {
                 <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 mb-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-600">Valor a pagar agora (70%):</p>
+                      <p className="text-xs text-gray-600">Valor a pagar agora (60%):</p>
                       <p className="text-2xl font-bold text-blue-600">
-                        {formatPrice(Math.round(getTotalPrice() * 0.70))}
+                        {formatPrice(getFirstPaymentAmount())}
                       </p>
                       {!showCardForm && (
                         <p className="text-[10px] text-green-600 font-semibold mt-1">
-                          ✨ Com PIX: {formatPrice(Math.round((getTotalPrice() - Math.round(getTotalPrice() * 0.10)) * 0.70))}
+                          ✨ Com PIX: {formatPrice(Math.round((getTotalPrice() - Math.round(getTotalPrice() * 0.10)) * 0.60))}
                         </p>
                       )}
                     </div>
-                    {isGasProduct() && (
+                    {requiresSplitPayment() && (
                       <div className="text-right">
-                        <p className="text-xs text-gray-600">Restante (30%):</p>
+                        <p className="text-xs text-gray-600">Restante (40%):</p>
                         <p className="text-sm font-semibold text-gray-700">
-                          {formatPrice(Math.round(getTotalPrice() * 0.30))}
+                          {formatPrice(getTaxPaymentAmount())}
                         </p>
                         <p className="text-[10px] text-gray-500">Após entrega</p>
                       </div>
@@ -3579,17 +3597,17 @@ export default function CheckoutPage() {
                       <h3 className="font-semibold text-green-800 text-sm sm:text-base">PIX Gerado com Sucesso!</h3>
                     </div>
 
-                    {/* Informação de Valores - 70% e 30% */}
+                    {/* Informação de Valores - 60% e 40% */}
                     {requiresSplitPayment() && !firstPaymentCompleted && (
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                         <p className="text-sm font-bold text-blue-800 mb-2">💰 Pagamento Parcelado</p>
                         <div className="space-y-1 text-xs text-gray-700">
                           <div className="flex justify-between">
-                            <span>🔵 Pagando agora (70%):</span>
+                            <span>🔵 Pagando agora (60%):</span>
                             <strong className="text-blue-600">{formatPrice(getPaymentAmount())}</strong>
                           </div>
                           <div className="flex justify-between">
-                            <span>⚪ Restante após entrega (30%):</span>
+                            <span>⚪ Restante após entrega (40%):</span>
                             <strong className="text-gray-600">{formatPrice(getTaxPaymentAmount())}</strong>
                           </div>
                           <div className="flex justify-between border-t pt-1 mt-1">
@@ -3602,14 +3620,14 @@ export default function CheckoutPage() {
 
                     {requiresSplitPayment() && firstPaymentCompleted && (
                       <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
-                        <p className="text-sm font-bold text-orange-800 mb-2">💰 Pagamento dos Impostos (30%)</p>
+                        <p className="text-sm font-bold text-orange-800 mb-2">💰 Pagamento dos Impostos (40%)</p>
                         <div className="space-y-1 text-xs text-gray-700">
                           <div className="flex justify-between">
-                            <span>✅ Já pago (70%):</span>
+                            <span>✅ Já pago (60%):</span>
                             <strong className="text-green-600">{formatPrice(getFirstPaymentAmount())}</strong>
                           </div>
                           <div className="flex justify-between">
-                            <span>🔵 Pagando agora (30%):</span>
+                            <span>🔵 Pagando agora (40%):</span>
                             <strong className="text-orange-600">{formatPrice(getTaxPaymentAmount())}</strong>
                           </div>
                           <div className="flex justify-between border-t pt-1 mt-1">
@@ -3656,7 +3674,7 @@ export default function CheckoutPage() {
                                 } else {
                                   console.log('✅ Pagamento simulado como PAID!')
                                   
-                                  // Pagamento completo (100% ou segundo pagamento de 30%)
+                                  // Pagamento completo (100% ou segundo pagamento de 40%)
                                   console.log('🎉 Pagamento 100% completo! Mostrando modal de upsell...')
                                   setTimeout(() => {
                                     console.log('🍺 [SIMULAÇÃO] Abrindo modal de upsell...')
@@ -4098,16 +4116,16 @@ export default function CheckoutPage() {
                 <div className="space-y-1 text-sm text-gray-600">
                   <p><strong>Produto:</strong> {productName}</p>
                   <p><strong>Endereço:</strong> {addressData?.logradouro}, {customerData.number}</p>
-                  {isGasProduct() ? (
+                  {requiresSplitPayment() ? (
                     <>
                       <p className="text-sm text-gray-600 mt-2">
                         <strong>Valor total:</strong> {formatCurrency(getTotalPrice())}
                       </p>
                       <p className="text-lg font-bold text-blue-600 mt-1">
-                        Cobrança inicial (70%): {formatCurrency(Math.round(getTotalPrice() * 0.70))}
+                        Cobrança inicial (60%): {formatCurrency(getFirstPaymentAmount())}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Restante (30%): {formatCurrency(Math.round(getTotalPrice() * 0.30))} após entrega
+                        Restante (40%): {formatCurrency(getTaxPaymentAmount())} após entrega
                       </p>
                     </>
                   ) : (
@@ -4237,7 +4255,7 @@ export default function CheckoutPage() {
                   await new Promise(resolve => setTimeout(resolve, 100))
                   
                   // Gerar PIX com desconto de 10% já aplicado
-                  // A função generatePix já vai calcular 70% se for gás
+                  // A função generatePix já vai calcular 60% se for gás/combo
                   console.log('💰 Desconto PIX aplicado:', pixDiscount)
                   console.log('🔥 Gerando PIX com valor já descontado...')
                   await generatePix(false)
