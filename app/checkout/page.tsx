@@ -1482,12 +1482,21 @@ export default function CheckoutPage() {
             console.log('🔍 Verificando tipo de pagamento...')
             
             // Recuperar dados do localStorage - verificar primeiro se é PIX de impostos
+            // IMPORTANTE: Verificar se o transactionId corresponde ao PIX de 40%
             let savedTransaction = localStorage.getItem('tax-pix-transaction')
             let isTaxPayment = false
             
             if (savedTransaction) {
-              isTaxPayment = true
-              console.log('💰 Detectado pagamento de impostos (40%)')
+              const taxTransaction = JSON.parse(savedTransaction)
+              // Só considera como pagamento de 40% se o ID corresponder
+              if (taxTransaction.pixData?.id === transactionId) {
+                isTaxPayment = true
+                console.log('💰 Detectado pagamento de impostos (40%) - ID corresponde:', transactionId)
+              } else {
+                console.log('⚠️ tax-pix-transaction existe mas ID não corresponde. Polling ID:', transactionId, 'Tax ID:', taxTransaction.pixData?.id)
+                savedTransaction = localStorage.getItem('current-pix-transaction')
+                console.log('💰 Usando current-pix-transaction para pagamento principal')
+              }
             } else {
               savedTransaction = localStorage.getItem('current-pix-transaction')
               console.log('💰 Detectado pagamento principal (60% ou 100%)')

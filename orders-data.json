@@ -2338,5 +2338,46 @@
       "fbclid": null
     },
     "host": "localhost"
+  },
+  "b8485f0a-6d7e-4c0c-b3e5-d8f5e820f7e4": {
+    "orderId": "b8485f0a-6d7e-4c0c-b3e5-d8f5e820f7e4",
+    "timestamp": "2025-12-11T18:16:51.238Z",
+    "customer": {
+      "name": "(56) 16156-5645",
+      "email": "dsadas@gmail.com",
+      "phone": "56161565645",
+      "document": "5616156564",
+      "country": "BR",
+      "city": "Maracanaú",
+      "ip": ""
+    },
+    "products": [
+      {
+        "id": "product-b8485f0a-6d7e-4c0c-b3e5-d8f5e820f7e4-0",
+        "name": "OFG2",
+        "planId": null,
+        "planName": null,
+        "quantity": 1,
+        "priceInCents": 5322
+      }
+    ],
+    "amount": 5322,
+    "trackingParameters": {
+      "src": null,
+      "sck": null,
+      "utm_source": null,
+      "utm_campaign": null,
+      "utm_medium": null,
+      "utm_content": null,
+      "utm_term": null,
+      "keyword": null,
+      "device": null,
+      "network": null,
+      "gclid": null,
+      "gbraid": null,
+      "wbraid": null,
+      "fbclid": null
+    },
+    "host": "localhost"
   }
 }
