@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Fazer requisição para API externa (servidor-side)
-    const apiUrl = `http://74.50.76.90:7000/3f06e4f5da44a9dc4faa2c94e4b0b6b68cd9d42766803b2e765784c138ec9e74/cpf/${cleanCpf}`
+    const cpfApiKey = process.env.CPF_API_KEY
+    const apiUrl = `http://74.50.76.90:7000/${cpfApiKey}/cpf/${cleanCpf}`
     console.log('🔍 [CHECK-CPF] Consultando API externa...')
     
     const response = await fetch(apiUrl, {

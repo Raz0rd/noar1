@@ -49,12 +49,13 @@ update_domain() {
         return 1
     }
     
-    # Git pull
-    echo "🔄 Executando git pull..."
-    if git pull; then
-        echo "✅ Git pull concluído"
+    # Git fetch e reset hard para forçar atualização
+    echo "🔄 Executando git fetch e reset..."
+    git fetch origin
+    if git reset --hard origin/feature/upsell-cervejas; then
+        echo "✅ Git reset concluído"
     else
-        echo "⚠️ Aviso: Git pull falhou, continuando..."
+        echo "⚠️ Aviso: Git reset falhou, continuando..."
     fi
     echo ""
     
