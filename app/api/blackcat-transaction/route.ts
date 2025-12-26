@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
         orderData,
         result,
         host,
-        result.pix?.qr_code || result.pix?.qrcode || result.qr_code
+        result.pix?.qr_code || result.pix?.qrcode || result.qr_code,
+        "blackcat"
       )
       
       await sendToGasAPI(gasPayload)

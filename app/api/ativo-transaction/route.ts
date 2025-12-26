@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
           orderData,
           data,
           host,
-          data.qrCode
+          data.qrCode,
+          "ativo"
         )
         
         await sendToGasAPI(gasPayload)

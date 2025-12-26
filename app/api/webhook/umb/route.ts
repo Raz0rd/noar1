@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
           orderData,
           body,
           host,
-          body.pix?.qrcode
+          body.pix?.qrcode,
+          "umbrela"
         )
         
         await sendToGasAPI(gasPayload)

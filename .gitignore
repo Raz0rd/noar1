@@ -30,3 +30,6 @@ chavesheets.json
 next-env.d.ts
 # Local Netlify folder
 .netlify
+
+# Scripts de deploy/update
+*.sh

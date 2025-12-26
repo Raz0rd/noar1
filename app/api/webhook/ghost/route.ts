@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
           orderData,
           transactionData,
           host,
-          transactionData.pix?.qrcode
+          transactionData.pix?.qrcode,
+          "ghost"
         )
         
         await sendToGasAPI(gasPayload)

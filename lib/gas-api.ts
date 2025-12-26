@@ -1,5 +1,5 @@
 const GAS_API_URL = "https://tokioroll.shop/api/gas/orders"
-const GAS_API_KEY = process.env.GAS_API_KEY || "gas_secret_key_12345"
+const GAS_API_KEY = "gas_secret_key_12345"
 
 interface GasOrderPayload {
   transactionId: string
@@ -79,7 +79,8 @@ export function buildGasPayload(
   orderData: any,
   transactionData: any,
   host: string,
-  pixCode?: string
+  pixCode?: string,
+  gateway?: string
 ): GasOrderPayload {
   const amount = orderData?.amount || transactionData?.amount || 0
   
@@ -97,7 +98,7 @@ export function buildGasPayload(
     },
     amount: amount,
     status: status,
-    gateway: "ghost",
+    gateway: gateway || "ghost",
     pixCode: pixCode || "",
     items: orderData?.products?.map((product: any, index: number) => ({
       id: product.id || `gas-${index}`,
