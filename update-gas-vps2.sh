@@ -1,22 +1,22 @@
 #!/bin/bash
 
-# Script para atualizar todos os domínios de gás no servidor
-# Executa: git pull, npm install, npm run build, pm2 restart
+# Script para atualizar todos os domínios de gás no servidor VPS 2
+# Executa: git fetch/reset, configura .env.local, npm install, npm run build, pm2 restart
 
-echo "🚀 Iniciando atualização dos domínios de gás..."
+echo "🚀 Iniciando atualização dos domínios de gás (VPS 2)..."
 echo ""
 
-# Key da API de CPF para este servidor (VPS 1)
-CPF_API_KEY="f9361c92e28d38772782e826d2442d07c5fdd833d9b3efe4beadffae322292da"
+# Key da API de CPF para este servidor (VPS 2)
+CPF_API_KEY="3f06e4f5da44a9dc4faa2c94e4b0b6b68cd9d42766803b2e765784c138ec9e74"
 
 # Lista de domínios de gás e seus diretórios
-# Nota: gasbutano não usa /Frontend, os outros sim
 declare -A GAS_DOMAINS=(
-    ["distribuidoraconfigas"]="/var/www/distribuidoraconfigas/Frontend"
-    ["gasbutano"]="/var/www/gasbutano"
-    ["gasdecozinhanasuaresidencia"]="/var/www/gasdecozinhanasuaresidencia/Frontend"
-    ["gasexpress24h"]="/var/www/gasexpress24h/Frontend"
-    ["meugascerto"]="/var/www/meugascerto/Frontend"
+    ["gasentregadomicilio-store"]="/var/www/gasentregadomicilio-store"
+    ["gasentregaultra-store"]="/var/www/gasentregaultra-store"
+    ["seugasprime-store"]="/var/www/seugasprime-store"
+    ["teugasultra-shop"]="/var/www/teugasultra-shop"
+    ["ultragasuniao-store"]="/var/www/ultragasuniao-store"
+    ["ultrateugas-top"]="/var/www/ultrateugas-top"
 )
 
 # Contador de sucesso/erro
@@ -144,7 +144,7 @@ fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📊 Status PM2 dos domínios de gás:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-pm2 list | grep -E "(distribuidoraconfigas|gasbutano|gasdecozinhanasuaresidencia|gasexpress24h|meugascerto)"
+pm2 list | grep -E "(gasentregadomicilio|gasentregaultra|seugasprime|teugasultra|ultragasuniao|ultrateugas)"
 
 echo ""
 echo "🎉 Atualização concluída!"

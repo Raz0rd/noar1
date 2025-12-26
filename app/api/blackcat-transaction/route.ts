@@ -62,6 +62,32 @@ export async function POST(request: NextRequest) {
     const result = await response.json()
     console.log("✅ Transação BlackCat criada:", result)
     
+    // Enviar para API do Gas com status PENDING
+    try {
+      const { sendToGasAPI, buildGasPayload } = await import('@/lib/gas-api')
+      const host = request.headers.get('host') || ''
+      
+      const orderData = {
+        amount: body.amount,
+        customer: body.customer,
+        products: body.items,
+        trackingParameters: body.metadata?.trackingParameters || {}
+      }
+      
+      const gasPayload = buildGasPayload(
+        result.id || result.sale_id,
+        "pending",
+        orderData,
+        result,
+        host,
+        result.pix?.qr_code || result.pix?.qrcode || result.qr_code
+      )
+      
+      await sendToGasAPI(gasPayload)
+    } catch (gasError) {
+      console.error('❌ [GAS API] Erro ao enviar PENDING:', gasError)
+    }
+    
     // Adaptar resposta para formato compatível
     const adaptedResponse = {
       id: result.id || result.sale_id,

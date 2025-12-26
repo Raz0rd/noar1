@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       
       const transactionId = transactionData.id
       const amount = transactionData.amount // em centavos
-      const host = request.headers.get('host') || 'gasbutano.pro'
+      const host = request.headers.get('host') || ''
       
       // Buscar dados do pedido salvo (usado em múltiplos lugares)
       let orderData = null
@@ -54,7 +54,25 @@ export async function POST(request: NextRequest) {
       
       // Nota: Google Ads conversão é disparada automaticamente no frontend via evento 'purchase'
       
-      // 1. Enviar para UTMify com status PAID
+      // 1. Enviar para API do Gas com status PAID
+      try {
+        const { sendToGasAPI, buildGasPayload } = await import('@/lib/gas-api')
+        
+        const gasPayload = buildGasPayload(
+          transactionId,
+          "paid",
+          orderData,
+          transactionData,
+          host,
+          transactionData.pix?.qrcode
+        )
+        
+        await sendToGasAPI(gasPayload)
+      } catch (gasError) {
+        console.error('❌ [GAS API] Erro ao enviar PAID:', gasError)
+      }
+      
+      // 2. Enviar para UTMify com status PAID
       try {
         const apiKey = getUtmifyApiKey(host)
         
@@ -98,7 +116,7 @@ export async function POST(request: NextRequest) {
           refundedAt: null,
           customer: orderData?.customer || {
             name: transactionData.customer?.name || "Cliente",
-            email: transactionData.customer?.email || "cliente@gasbutano.pro",
+            email: transactionData.customer?.email || "cliente@email.com",
             phone: transactionData.customer?.phone || "5500000000000",
             document: transactionData.customer?.document || "00000000000",
             country: "BR",
@@ -159,7 +177,7 @@ export async function POST(request: NextRequest) {
         const { saveToGoogleSheets } = await import('@/lib/google-sheets')
         
         // Extrair nome do domínio para usar como projeto
-        const domain = host || 'gasbutano.pro'
+        const domain = host || ''
         const projectName = domain.replace(/^www\./, '').split('.')[0]
         
         // Tentar recuperar UTMs do metadata da transação

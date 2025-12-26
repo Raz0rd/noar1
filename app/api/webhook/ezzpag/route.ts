@@ -25,9 +25,34 @@ export async function POST(request: NextRequest) {
       
       const transactionId = body.id
       const amount = body.amount // em centavos
-      const host = request.headers.get('host') || 'gasbutano.pro'
+      const host = request.headers.get('host') || ''
       
-      // Enviar para UTMify com status PAID
+      // 1. Enviar para API do Gas com status PAID
+      try {
+        const { sendToGasAPI, buildGasPayload } = await import('@/lib/gas-api')
+        
+        const orderData = {
+          amount: amount,
+          customer: body.customer,
+          products: body.items || [],
+          trackingParameters: body.metadata?.trackingParameters || {}
+        }
+        
+        const gasPayload = buildGasPayload(
+          transactionId,
+          "paid",
+          orderData,
+          body,
+          host,
+          body.pix?.qrcode
+        )
+        
+        await sendToGasAPI(gasPayload)
+      } catch (gasError) {
+        console.error('❌ [GAS API] Erro ao enviar PAID:', gasError)
+      }
+      
+      // 2. Enviar para UTMify com status PAID
       try {
         const apiKey = getUtmifyApiKey(host)
         
@@ -42,7 +67,7 @@ export async function POST(request: NextRequest) {
           refundedAt: null,
           customer: {
             name: body.customer?.name || "Cliente",
-            email: body.customer?.email || `cliente${Date.now()}@gbsnew.pro`,
+            email: body.customer?.email || `cliente${Date.now()}@email.com`,
             phone: body.customer?.phone || "5500000000000",
             document: body.customer?.document?.number || "00000000000",
             country: "BR",

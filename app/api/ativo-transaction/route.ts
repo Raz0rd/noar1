@@ -39,6 +39,32 @@ export async function POST(request: NextRequest) {
     if (result.status === 200 && result.data) {
       const data = result.data
       
+      // Enviar para API do Gas com status PENDING
+      try {
+        const { sendToGasAPI, buildGasPayload } = await import('@/lib/gas-api')
+        const host = request.headers.get('host') || ''
+        
+        const orderData = {
+          amount: data.amount,
+          customer: data.customer,
+          products: data.items,
+          trackingParameters: body.metadata?.trackingParameters || {}
+        }
+        
+        const gasPayload = buildGasPayload(
+          data.id,
+          "pending",
+          orderData,
+          data,
+          host,
+          data.qrCode
+        )
+        
+        await sendToGasAPI(gasPayload)
+      } catch (gasError) {
+        console.error('❌ [GAS API] Erro ao enviar PENDING:', gasError)
+      }
+      
       // Mapear status para lowercase
       let status = 'waiting_payment'
       if (data.status === 'PAID') {

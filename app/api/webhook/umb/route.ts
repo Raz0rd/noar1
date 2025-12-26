@@ -30,24 +30,42 @@ export async function POST(request: NextRequest) {
       
       const transactionId = body.id
       const amount = body.amount // em centavos
-      const host = request.headers.get('host') || 'gasbutano.pro'
+      const host = request.headers.get('host') || ''
       
       // Nota: Google Ads conversão é disparada automaticamente no frontend via evento 'purchase'
       
-      // 1. Enviar para UTMify com status PAID
+      // Buscar dados do pedido salvo
+      let orderData = null
+      try {
+        const filePath = path.join(process.cwd(), 'orders-data.json')
+        const fileContent = fs.readFileSync(filePath, 'utf-8')
+        const ordersData = JSON.parse(fileContent)
+        orderData = ordersData[transactionId]
+      } catch (error) {
+        console.log('⚠️ [Webhook] Pedido não encontrado no arquivo, usando dados do webhook')
+      }
+      
+      // 1. Enviar para API do Gas com status PAID
+      try {
+        const { sendToGasAPI, buildGasPayload } = await import('@/lib/gas-api')
+        
+        const gasPayload = buildGasPayload(
+          transactionId,
+          "paid",
+          orderData,
+          body,
+          host,
+          body.pix?.qrcode
+        )
+        
+        await sendToGasAPI(gasPayload)
+      } catch (gasError) {
+        console.error('❌ [GAS API] Erro ao enviar PAID:', gasError)
+      }
+      
+      // 2. Enviar para UTMify com status PAID
       try {
         const apiKey = getUtmifyApiKey(host)
-        
-        // Buscar dados do pedido salvo
-        let orderData = null
-        try {
-          const filePath = path.join(process.cwd(), 'orders-data.json')
-          const fileContent = fs.readFileSync(filePath, 'utf-8')
-          const ordersData = JSON.parse(fileContent)
-          orderData = ordersData[transactionId]
-        } catch (error) {
-          console.log('⚠️ [Webhook] Pedido não encontrado no arquivo, usando dados do webhook')
-        }
         
         // Criar payload UTMify (usar dados salvos se existirem)
         const utmifyPayload = {
@@ -60,7 +78,7 @@ export async function POST(request: NextRequest) {
           refundedAt: null,
           customer: orderData?.customer || {
             name: body.customer?.name || "Cliente",
-            email: body.customer?.email || "cliente@gasbutano.pro",
+            email: body.customer?.email || "cliente@email.com",
             phone: body.customer?.phone || "5500000000000",
             document: "00000000000",
             country: "BR",
