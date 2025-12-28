@@ -36,32 +36,9 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    const fileContent = await fs.readFile(CONFIG_FILE, 'utf-8');
-    
-    // Extrair configurações do arquivo TypeScript
-    const configMatch = fileContent.match(/export const domainConfigs[^=]*=\s*({[\s\S]*?});/);
-    
-    if (!configMatch) {
-      throw new Error('Não foi possível extrair configurações do arquivo');
-    }
-    
-    // Converter para JSON (simplificado - assume formato correto)
-    let configStr = configMatch[1];
-    
-    // Remover comentários de linha única (//)
-    configStr = configStr.replace(/\/\/.*$/gm, '');
-    
-    // Remover comentários de múltiplas linhas (/* */)
-    configStr = configStr.replace(/\/\*[\s\S]*?\*\//g, '');
-    
-    // Converter aspas simples para duplas e adicionar aspas nas chaves
-    configStr = configStr
-      .replace(/'/g, '"')
-      .replace(/(\w+):/g, '"$1":')
-      .replace(/,\s*}/g, '}')
-      .replace(/,\s*]/g, ']');
-    
-    const configs = JSON.parse(configStr);
+    // Importar dinamicamente o módulo de configuração
+    const configModule = await import('@/lib/domain-config');
+    const configs = configModule.domainConfigs;
     
     return NextResponse.json({
       success: true,
