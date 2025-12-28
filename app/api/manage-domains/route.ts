@@ -46,7 +46,16 @@ export async function GET(request: NextRequest) {
     }
     
     // Converter para JSON (simplificado - assume formato correto)
-    const configStr = configMatch[1]
+    let configStr = configMatch[1];
+    
+    // Remover comentários de linha única (//)
+    configStr = configStr.replace(/\/\/.*$/gm, '');
+    
+    // Remover comentários de múltiplas linhas (/* */)
+    configStr = configStr.replace(/\/\*[\s\S]*?\*\//g, '');
+    
+    // Converter aspas simples para duplas e adicionar aspas nas chaves
+    configStr = configStr
       .replace(/'/g, '"')
       .replace(/(\w+):/g, '"$1":')
       .replace(/,\s*}/g, '}')
