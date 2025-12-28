@@ -1,0 +1,249 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+// Token de autenticação (mesmo do admin-domains)
+const API_TOKEN = 'api-lovable_front_sushi1config';
+
+// Caminho do arquivo de configuração
+const CONFIG_FILE = path.join(process.cwd(), 'lib', 'domain-config.ts');
+
+interface DomainConfig {
+  GOOGLE_ADS_TAG: string;
+  GOOGLE_ADS_CONVERSION: string;
+  GOOGLE_ADS_INITIATE_CHECKOUT?: string;
+}
+
+// GET - Listar todas as configurações de domínios
+export async function GET(request: NextRequest) {
+  const token = request.nextUrl.searchParams.get('token');
+  
+  if (token !== API_TOKEN) {
+    return NextResponse.json(
+      { success: false, error: 'Token de autenticação inválido' },
+      { status: 401 }
+    );
+  }
+  
+  try {
+    const fileContent = await fs.readFile(CONFIG_FILE, 'utf-8');
+    
+    // Extrair configurações do arquivo TypeScript
+    const configMatch = fileContent.match(/export const domainConfigs[^=]*=\s*({[\s\S]*?});/);
+    
+    if (!configMatch) {
+      throw new Error('Não foi possível extrair configurações do arquivo');
+    }
+    
+    // Converter para JSON (simplificado - assume formato correto)
+    const configStr = configMatch[1]
+      .replace(/'/g, '"')
+      .replace(/(\w+):/g, '"$1":')
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']');
+    
+    const configs = JSON.parse(configStr);
+    
+    return NextResponse.json({
+      success: true,
+      domains: configs,
+      total: Object.keys(configs).length
+    });
+    
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// POST - Adicionar ou atualizar domínio
+export async function POST(request: NextRequest) {
+  const token = request.nextUrl.searchParams.get('token');
+  
+  if (token !== API_TOKEN) {
+    return NextResponse.json(
+      { success: false, error: 'Token de autenticação inválido' },
+      { status: 401 }
+    );
+  }
+  
+  try {
+    const body = await request.json();
+    const { domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION, GOOGLE_ADS_INITIATE_CHECKOUT } = body;
+    
+    if (!domain || !GOOGLE_ADS_TAG || !GOOGLE_ADS_CONVERSION) {
+      return NextResponse.json(
+        { success: false, error: 'Campos obrigatórios: domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION' },
+        { status: 400 }
+      );
+    }
+    
+    // Ler arquivo atual
+    let fileContent = await fs.readFile(CONFIG_FILE, 'utf-8');
+    
+    // Verificar se domínio já existe
+    const domainExists = fileContent.includes(`'${domain}':`);
+    
+    const newConfig = `  '${domain}': {
+    GOOGLE_ADS_TAG: '${GOOGLE_ADS_TAG}',
+    GOOGLE_ADS_CONVERSION: '${GOOGLE_ADS_CONVERSION}',${GOOGLE_ADS_INITIATE_CHECKOUT ? `\n    GOOGLE_ADS_INITIATE_CHECKOUT: '${GOOGLE_ADS_INITIATE_CHECKOUT}'` : ''}
+  },`;
+    
+    if (domainExists) {
+      // Atualizar domínio existente
+      const regex = new RegExp(`'${domain}':\\s*{[^}]*},?`, 'g');
+      fileContent = fileContent.replace(regex, newConfig);
+    } else {
+      // Adicionar novo domínio antes do fechamento do objeto
+      fileContent = fileContent.replace(/};(\s*)$/, `,\n\n${newConfig}\n};$1`);
+    }
+    
+    // Fazer backup
+    const backupFile = CONFIG_FILE + '.backup.' + Date.now();
+    await fs.copyFile(CONFIG_FILE, backupFile);
+    
+    // Salvar arquivo atualizado
+    await fs.writeFile(CONFIG_FILE, fileContent, 'utf-8');
+    
+    return NextResponse.json({
+      success: true,
+      action: domainExists ? 'updated' : 'created',
+      domain,
+      message: `Domínio ${domainExists ? 'atualizado' : 'criado'} com sucesso`,
+      rebuild_required: true
+    });
+    
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Remover domínio
+export async function DELETE(request: NextRequest) {
+  const token = request.nextUrl.searchParams.get('token');
+  
+  if (token !== API_TOKEN) {
+    return NextResponse.json(
+      { success: false, error: 'Token de autenticação inválido' },
+      { status: 401 }
+    );
+  }
+  
+  try {
+    const body = await request.json();
+    const { domain } = body;
+    
+    if (!domain) {
+      return NextResponse.json(
+        { success: false, error: 'Campo obrigatório: domain' },
+        { status: 400 }
+      );
+    }
+    
+    // Ler arquivo atual
+    let fileContent = await fs.readFile(CONFIG_FILE, 'utf-8');
+    
+    // Verificar se domínio existe
+    if (!fileContent.includes(`'${domain}':`)) {
+      return NextResponse.json(
+        { success: false, error: 'Domínio não encontrado' },
+        { status: 404 }
+      );
+    }
+    
+    // Fazer backup
+    const backupFile = CONFIG_FILE + '.backup.' + Date.now();
+    await fs.copyFile(CONFIG_FILE, backupFile);
+    
+    // Remover domínio
+    const regex = new RegExp(`\\s*'${domain}':\\s*{[^}]*},?\\n?`, 'g');
+    fileContent = fileContent.replace(regex, '');
+    
+    // Limpar vírgulas extras
+    fileContent = fileContent.replace(/,(\s*),/g, ',$1');
+    
+    // Salvar arquivo atualizado
+    await fs.writeFile(CONFIG_FILE, fileContent, 'utf-8');
+    
+    return NextResponse.json({
+      success: true,
+      action: 'deleted',
+      domain,
+      message: 'Domínio removido com sucesso',
+      rebuild_required: true
+    });
+    
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - Trigger rebuild e restart
+export async function PUT(request: NextRequest) {
+  const token = request.nextUrl.searchParams.get('token');
+  
+  if (token !== API_TOKEN) {
+    return NextResponse.json(
+      { success: false, error: 'Token de autenticação inválido' },
+      { status: 401 }
+    );
+  }
+  
+  try {
+    const body = await request.json();
+    const { action } = body;
+    
+    if (action !== 'rebuild') {
+      return NextResponse.json(
+        { success: false, error: 'Ação inválida. Use: rebuild' },
+        { status: 400 }
+      );
+    }
+    
+    // Executar rebuild e restart
+    console.log('🔄 Iniciando rebuild...');
+    
+    const { stdout: buildOutput, stderr: buildError } = await execAsync('npm run build', {
+      cwd: process.cwd(),
+      timeout: 300000 // 5 minutos
+    });
+    
+    console.log('✅ Build concluído');
+    console.log('🔄 Reiniciando PM2...');
+    
+    const { stdout: pm2Output } = await execAsync('pm2 restart gasbutano', {
+      timeout: 30000
+    });
+    
+    console.log('✅ PM2 reiniciado');
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Rebuild e restart executados com sucesso',
+      build_output: buildOutput.substring(0, 500), // Primeiros 500 chars
+      pm2_output: pm2Output
+    });
+    
+  } catch (error: any) {
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error.message,
+        stderr: error.stderr?.substring(0, 500)
+      },
+      { status: 500 }
+    );
+  }
+}
