@@ -6,17 +6,22 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-// Token de autenticação (mesmo do admin-domains)
-const API_TOKEN = 'api-lovable_front_sushi1config';
+// Token de autenticação para gerenciamento de domínios gas
+const API_TOKEN = 'gas_domain_manager_2024';
 
 // Caminho do arquivo de configuração
 const CONFIG_FILE = path.join(process.cwd(), 'lib', 'domain-config.ts');
+
+type SiteCategory = 'gas' | 'sushi' | 'food' | 'delivery';
 
 interface DomainConfig {
   GOOGLE_ADS_TAG: string;
   GOOGLE_ADS_CONVERSION: string;
   GOOGLE_ADS_INITIATE_CHECKOUT?: string;
   SITE_URL: string;
+  CATEGORY: SiteCategory;
+  SITE_NAME?: string;
+  SITE_DESCRIPTION?: string;
 }
 
 // GET - Listar todas as configurações de domínios
@@ -76,7 +81,7 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    const { domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION, GOOGLE_ADS_INITIATE_CHECKOUT, SITE_URL } = body;
+    const { domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION, GOOGLE_ADS_INITIATE_CHECKOUT, SITE_URL, CATEGORY = 'gas', SITE_NAME, SITE_DESCRIPTION } = body;
     
     if (!domain || !GOOGLE_ADS_TAG || !GOOGLE_ADS_CONVERSION || !SITE_URL) {
       return NextResponse.json(
@@ -94,7 +99,8 @@ export async function POST(request: NextRequest) {
     const newConfig = `  '${domain}': {
     GOOGLE_ADS_TAG: '${GOOGLE_ADS_TAG}',
     GOOGLE_ADS_CONVERSION: '${GOOGLE_ADS_CONVERSION}',${GOOGLE_ADS_INITIATE_CHECKOUT ? `\n    GOOGLE_ADS_INITIATE_CHECKOUT: '${GOOGLE_ADS_INITIATE_CHECKOUT}',` : ''}
-    SITE_URL: '${SITE_URL}'
+    SITE_URL: '${SITE_URL}',
+    CATEGORY: '${CATEGORY}'${SITE_NAME ? `,\n    SITE_NAME: '${SITE_NAME}'` : ''}${SITE_DESCRIPTION ? `,\n    SITE_DESCRIPTION: '${SITE_DESCRIPTION}'` : ''}
   },`;
     
     if (domainExists) {

@@ -10,11 +10,11 @@ API para gerenciar configurações de domínios (tags do Google Ads) e fazer reb
 
 ## 🔐 Autenticação
 
-**Token obrigatório:** `api-lovable_front_sushi1config`
+**Token obrigatório:** `gas_domain_manager_2024`
 
 **Formato:**
 ```
-?token=api-lovable_front_sushi1config
+?token=gas_domain_manager_2024
 ```
 
 ---
@@ -27,7 +27,7 @@ Lista todas as configurações de domínios cadastradas.
 
 **Endpoint:**
 ```
-GET /api/manage-domains?token=api-lovable_front_sushi1config
+GET /api/manage-domains?token=gas_domain_manager_2024
 ```
 
 **Resposta:**
@@ -57,7 +57,7 @@ Adiciona um novo domínio ou atualiza um existente.
 
 **Endpoint:**
 ```
-POST /api/manage-domains?token=api-lovable_front_sushi1config
+POST /api/manage-domains?token=gas_domain_manager_2024
 ```
 
 **Headers:**
@@ -67,15 +67,35 @@ POST /api/manage-domains?token=api-lovable_front_sushi1config
 }
 ```
 
-**Body:**
+**Body (campos obrigatórios):**
 ```json
 {
   "domain": "meudominio.com.br",
   "GOOGLE_ADS_TAG": "AW-XXXXXXXXXX",
   "GOOGLE_ADS_CONVERSION": "AW-XXXXXXXXXX/YYYYYYY",
-  "GOOGLE_ADS_INITIATE_CHECKOUT": "AW-XXXXXXXXXX/ZZZZZZZ"
+  "SITE_URL": "https://meudominio.com.br"
 }
 ```
+
+**Body (com campos opcionais):**
+```json
+{
+  "domain": "meudominio.com.br",
+  "GOOGLE_ADS_TAG": "AW-XXXXXXXXXX",
+  "GOOGLE_ADS_CONVERSION": "AW-XXXXXXXXXX/YYYYYYY",
+  "GOOGLE_ADS_INITIATE_CHECKOUT": "AW-XXXXXXXXXX/ZZZZZZZ",
+  "SITE_URL": "https://meudominio.com.br",
+  "CATEGORY": "gas",
+  "SITE_NAME": "Meu Gás",
+  "SITE_DESCRIPTION": "Entrega rápida de gás"
+}
+```
+
+**Campos:**
+- ✅ **Obrigatórios:** `domain`, `GOOGLE_ADS_TAG`, `GOOGLE_ADS_CONVERSION`, `SITE_URL`
+- ⚙️ **Opcionais:** `GOOGLE_ADS_INITIATE_CHECKOUT`, `CATEGORY` (padrão: `'gas'`), `SITE_NAME`, `SITE_DESCRIPTION`
+
+> **Nota:** Como esta API está no projeto do gas (porta específica), o campo `CATEGORY` é automaticamente definido como `'gas'` se não for informado. Todos os domínios liberados por esta rota serão categorizados como gas.
 
 **Resposta - Domínio Criado:**
 ```json
@@ -107,7 +127,7 @@ Remove um domínio da configuração.
 
 **Endpoint:**
 ```
-DELETE /api/manage-domains?token=api-lovable_front_sushi1config
+DELETE /api/manage-domains?token=gas_domain_manager_2024
 ```
 
 **Headers:**
@@ -143,7 +163,7 @@ Executa `npm run build` e `pm2 restart gasbutano` automaticamente.
 
 **Endpoint:**
 ```
-PUT /api/manage-domains?token=api-lovable_front_sushi1config
+PUT /api/manage-domains?token=gas_domain_manager_2024
 ```
 
 **Headers:**
@@ -176,35 +196,37 @@ PUT /api/manage-domains?token=api-lovable_front_sushi1config
 
 ### **1. Listar domínios cadastrados**
 ```bash
-curl "http://38.180.196.242:3001/api/manage-domains?token=api-lovable_front_sushi1config"
+curl "http://38.180.196.242:3001/api/manage-domains?token=gas_domain_manager_2024"
 ```
 
 ### **2. Adicionar novo domínio**
 ```bash
-curl -X POST "http://38.180.196.242:3001/api/manage-domains?token=api-lovable_front_sushi1config" \
+curl -X POST "http://38.180.196.242:3001/api/manage-domains?token=gas_domain_manager_2024" \
   -H "Content-Type: application/json" \
   -d '{
     "domain": "gasrapido.com.br",
     "GOOGLE_ADS_TAG": "AW-11111111111",
     "GOOGLE_ADS_CONVERSION": "AW-11111111111/conv123",
-    "GOOGLE_ADS_INITIATE_CHECKOUT": "AW-11111111111/init456"
+    "GOOGLE_ADS_INITIATE_CHECKOUT": "AW-11111111111/init456",
+    "SITE_URL": "https://gasrapido.com.br"
   }'
 ```
 
 ### **3. Atualizar domínio existente**
 ```bash
-curl -X POST "http://38.180.196.242:3001/api/manage-domains?token=api-lovable_front_sushi1config" \
+curl -X POST "http://38.180.196.242:3001/api/manage-domains?token=gas_domain_manager_2024" \
   -H "Content-Type: application/json" \
   -d '{
     "domain": "gasrapido.com.br",
     "GOOGLE_ADS_TAG": "AW-22222222222",
-    "GOOGLE_ADS_CONVERSION": "AW-22222222222/conv789"
+    "GOOGLE_ADS_CONVERSION": "AW-22222222222/conv789",
+    "SITE_URL": "https://gasrapido.com.br"
   }'
 ```
 
 ### **4. Remover domínio**
 ```bash
-curl -X DELETE "http://38.180.196.242:3001/api/manage-domains?token=api-lovable_front_sushi1config" \
+curl -X DELETE "http://38.180.196.242:3001/api/manage-domains?token=gas_domain_manager_2024" \
   -H "Content-Type: application/json" \
   -d '{
     "domain": "gasrapido.com.br"
@@ -213,7 +235,7 @@ curl -X DELETE "http://38.180.196.242:3001/api/manage-domains?token=api-lovable_
 
 ### **5. Fazer rebuild e restart**
 ```bash
-curl -X PUT "http://38.180.196.242:3001/api/manage-domains?token=api-lovable_front_sushi1config" \
+curl -X PUT "http://38.180.196.242:3001/api/manage-domains?token=gas_domain_manager_2024" \
   -H "Content-Type: application/json" \
   -d '{
     "action": "rebuild"
@@ -228,16 +250,17 @@ curl -X PUT "http://38.180.196.242:3001/api/manage-domains?token=api-lovable_fro
 
 ```bash
 # 1. Adicionar domínio
-curl -X POST "http://38.180.196.242:3001/api/manage-domains?token=api-lovable_front_sushi1config" \
+curl -X POST "http://38.180.196.242:3001/api/manage-domains?token=gas_domain_manager_2024" \
   -H "Content-Type: application/json" \
   -d '{
     "domain": "novodominio.com.br",
     "GOOGLE_ADS_TAG": "AW-XXXXXXXXXX",
-    "GOOGLE_ADS_CONVERSION": "AW-XXXXXXXXXX/YYYYYYY"
+    "GOOGLE_ADS_CONVERSION": "AW-XXXXXXXXXX/YYYYYYY",
+    "SITE_URL": "https://novodominio.com.br"
   }'
 
 # 2. Fazer rebuild e restart
-curl -X PUT "http://38.180.196.242:3001/api/manage-domains?token=api-lovable_front_sushi1config" \
+curl -X PUT "http://38.180.196.242:3001/api/manage-domains?token=gas_domain_manager_2024" \
   -H "Content-Type: application/json" \
   -d '{"action": "rebuild"}'
 ```
@@ -303,7 +326,7 @@ O rebuild pode levar de **30 segundos a 2 minutos**, dependendo do servidor:
 ```json
 {
   "success": false,
-  "error": "Campos obrigatórios: domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION"
+  "error": "Campos obrigatórios: domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION, SITE_URL"
 }
 ```
 
@@ -363,22 +386,29 @@ Para integrar com o painel admin-domains.html existente:
 
 ```javascript
 // Adicionar domínio via JavaScript
-async function addGasDomain(domain, googleAdsTag, conversion) {
-  const response = await fetch('http://38.180.196.242:3001/api/manage-domains?token=api-lovable_front_sushi1config', {
+async function addGasDomain(domain, googleAdsTag, conversion, siteUrl, initCheckout = null) {
+  const payload = {
+    domain: domain,
+    GOOGLE_ADS_TAG: googleAdsTag,
+    GOOGLE_ADS_CONVERSION: conversion,
+    SITE_URL: siteUrl
+  };
+  
+  if (initCheckout) {
+    payload.GOOGLE_ADS_INITIATE_CHECKOUT = initCheckout;
+  }
+  
+  const response = await fetch('http://38.180.196.242:3001/api/manage-domains?token=gas_domain_manager_2024', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      domain: domain,
-      GOOGLE_ADS_TAG: googleAdsTag,
-      GOOGLE_ADS_CONVERSION: conversion
-    })
+    body: JSON.stringify(payload)
   });
   
   const data = await response.json();
   
   if (data.success && data.rebuild_required) {
     // Fazer rebuild automático
-    await fetch('http://38.180.196.242:3001/api/manage-domains?token=api-lovable_front_sushi1config', {
+    await fetch('http://38.180.196.242:3001/api/manage-domains?token=gas_domain_manager_2024', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'rebuild' })
