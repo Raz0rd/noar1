@@ -16,6 +16,7 @@ interface DomainConfig {
   GOOGLE_ADS_TAG: string;
   GOOGLE_ADS_CONVERSION: string;
   GOOGLE_ADS_INITIATE_CHECKOUT?: string;
+  SITE_URL: string;
 }
 
 // GET - Listar todas as configurações de domínios
@@ -75,11 +76,11 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    const { domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION, GOOGLE_ADS_INITIATE_CHECKOUT } = body;
+    const { domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION, GOOGLE_ADS_INITIATE_CHECKOUT, SITE_URL } = body;
     
-    if (!domain || !GOOGLE_ADS_TAG || !GOOGLE_ADS_CONVERSION) {
+    if (!domain || !GOOGLE_ADS_TAG || !GOOGLE_ADS_CONVERSION || !SITE_URL) {
       return NextResponse.json(
-        { success: false, error: 'Campos obrigatórios: domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION' },
+        { success: false, error: 'Campos obrigatórios: domain, GOOGLE_ADS_TAG, GOOGLE_ADS_CONVERSION, SITE_URL' },
         { status: 400 }
       );
     }
@@ -92,7 +93,8 @@ export async function POST(request: NextRequest) {
     
     const newConfig = `  '${domain}': {
     GOOGLE_ADS_TAG: '${GOOGLE_ADS_TAG}',
-    GOOGLE_ADS_CONVERSION: '${GOOGLE_ADS_CONVERSION}',${GOOGLE_ADS_INITIATE_CHECKOUT ? `\n    GOOGLE_ADS_INITIATE_CHECKOUT: '${GOOGLE_ADS_INITIATE_CHECKOUT}'` : ''}
+    GOOGLE_ADS_CONVERSION: '${GOOGLE_ADS_CONVERSION}',${GOOGLE_ADS_INITIATE_CHECKOUT ? `\n    GOOGLE_ADS_INITIATE_CHECKOUT: '${GOOGLE_ADS_INITIATE_CHECKOUT}',` : ''}
+    SITE_URL: '${SITE_URL}'
   },`;
     
     if (domainExists) {

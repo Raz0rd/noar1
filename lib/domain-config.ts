@@ -5,6 +5,7 @@ export interface DomainConfig {
   GOOGLE_ADS_TAG: string;
   GOOGLE_ADS_CONVERSION: string;
   GOOGLE_ADS_INITIATE_CHECKOUT?: string;
+  SITE_URL: string; // URL completa para SEO (Open Graph, Schema.org)
 }
 
 export const domainConfigs: Record<string, DomainConfig> = {
@@ -12,14 +13,16 @@ export const domainConfigs: Record<string, DomainConfig> = {
   'localhost': {
     GOOGLE_ADS_TAG: 'AW-17780793164',
     GOOGLE_ADS_CONVERSION: 'AW-17780793164/XXXXXXX',
-    GOOGLE_ADS_INITIATE_CHECKOUT: 'AW-17780793164/YYYYYYY'
+    GOOGLE_ADS_INITIATE_CHECKOUT: 'AW-17780793164/YYYYYYY',
+    SITE_URL: 'http://localhost:3001'
   },
   
   // Exemplo: Configás principal
   'configas.com.br': {
     GOOGLE_ADS_TAG: 'AW-17780793164',
     GOOGLE_ADS_CONVERSION: 'AW-17780793164/XXXXXXX',
-    GOOGLE_ADS_INITIATE_CHECKOUT: 'AW-17780793164/YYYYYYY'
+    GOOGLE_ADS_INITIATE_CHECKOUT: 'AW-17780793164/YYYYYYY',
+    SITE_URL: 'https://configas.com.br'
   },
   
   // Adicione mais domínios aqui conforme necessário

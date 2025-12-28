@@ -91,6 +91,7 @@ export default function RootLayout({
   // Obter configuração do domínio
   const domainConfig = getDomainConfig(hostname)
   const googleAdsTag = domainConfig.GOOGLE_ADS_TAG
+  const siteUrl = domainConfig.SITE_URL
   
   return (
     <html lang="pt-BR">
@@ -111,7 +112,7 @@ export default function RootLayout({
               '@type': 'LocalBusiness',
               name: 'Configás',
               description: 'Entrega expressa de gás de cozinha e água mineral em até 30 minutos',
-              url: process.env.NEXT_PUBLIC_SITE_URL,
+              url: siteUrl,
               telephone: '+55-91-946532477',
               priceRange: '$$',
               image: '/images/og-image.png',
