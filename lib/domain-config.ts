@@ -46,6 +46,17 @@ export const domainConfigs: Record<string, DomainConfig> = {
     SITE_NAME: 'Configás',
     SITE_DESCRIPTION: 'Entrega expressa de gás de cozinha'
   },
+
+  // IP do servidor com porta
+  '38.180.196.242:3001': {
+    GOOGLE_ADS_TAG: 'AW-17780793164',
+    GOOGLE_ADS_CONVERSION: 'AW-17780793164/XXXXXXX',
+    GOOGLE_ADS_INITIATE_CHECKOUT: 'AW-17780793164/YYYYYYY',
+    SITE_URL: 'http://38.180.196.242:3001',
+    CATEGORY: 'gas',
+    SITE_NAME: 'Configás',
+    SITE_DESCRIPTION: 'Entrega expressa de gás de cozinha'
+  },
   
   // Adicione mais domínios aqui conforme necessário
   // 'outrodominio.com.br': {
