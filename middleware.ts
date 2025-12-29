@@ -33,21 +33,31 @@ export async function middleware(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || ''
     const referrer = request.headers.get('referer') || ''
     
-    // Enviar para API de logs (fire and forget)
-    fetch(`${request.nextUrl.origin}/api/access-logs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        domain: hostname,
-        ip,
-        userAgent,
-        path,
-        utms,
-        referrer
+    // Log dos dados capturados
+    console.log(`📊 [MIDDLEWARE] Primeiro acesso detectado: ${hostname} | IP: ${ip} | UTMs:`, JSON.stringify(utms))
+    
+    // Enviar para API de logs (fire and forget) - usando localhost para evitar problemas de DNS
+    try {
+      fetch(`http://localhost:3001/api/access-logs`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Host': hostname // Manter o hostname original
+        },
+        body: JSON.stringify({
+          domain: hostname,
+          ip,
+          userAgent,
+          path,
+          utms,
+          referrer
+        })
+      }).catch(err => {
+        console.error('❌ [MIDDLEWARE] Erro ao salvar log:', err.message)
       })
-    }).catch(err => {
-      console.error('❌ [MIDDLEWARE] Erro ao salvar log:', err.message)
-    })
+    } catch (err: any) {
+      console.error('❌ [MIDDLEWARE] Erro ao enviar log:', err.message)
+    }
   }
   
   // Adiciona hostname aos headers para uso no servidor
