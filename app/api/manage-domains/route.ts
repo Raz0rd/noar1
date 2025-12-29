@@ -216,6 +216,18 @@ export async function PUT(request: NextRequest) {
     console.log('🔄 Iniciando rebuild...');
     
     try {
+      // Limpar cache do Next.js antes do build
+      console.log('🗑️ Limpando cache do Next.js...');
+      try {
+        await execAsync('rm -rf .next', {
+          cwd: process.cwd(),
+          timeout: 10000
+        });
+        console.log('✅ Cache limpo');
+      } catch (cacheError: any) {
+        console.warn('⚠️ Não foi possível limpar cache:', cacheError.message);
+      }
+      
       const { stdout: buildOutput, stderr: buildError } = await execAsync('npm run build', {
         cwd: process.cwd(),
         timeout: 300000 // 5 minutos
