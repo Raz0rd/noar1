@@ -57,6 +57,16 @@ export const domainConfigs: Record<string, DomainConfig> = {
     SITE_NAME: 'Configás',
     SITE_DESCRIPTION: 'Entrega expressa de gás de cozinha'
   },
+
+  // Ulltra Gás
+  'ulltragas.shop': {
+    GOOGLE_ADS_TAG: 'AW-12345678',
+    GOOGLE_ADS_CONVERSION: 'AW-12345678/conv123',
+    SITE_URL: 'https://ulltragas.shop',
+    CATEGORY: 'gas',
+    SITE_NAME: 'Ulltra Gás',
+    SITE_DESCRIPTION: 'Entrega rápida de gás de cozinha'
+  },
   
   // Adicione mais domínios aqui conforme necessário
   // 'outrodominio.com.br': {
