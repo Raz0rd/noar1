@@ -209,26 +209,48 @@ export async function PUT(request: NextRequest) {
     // Executar rebuild e restart
     console.log('🔄 Iniciando rebuild...');
     
-    const { stdout: buildOutput, stderr: buildError } = await execAsync('npm run build', {
-      cwd: process.cwd(),
-      timeout: 300000 // 5 minutos
-    });
-    
-    console.log('✅ Build concluído');
-    console.log('🔄 Reiniciando PM2...');
-    
-    const { stdout: pm2Output } = await execAsync('pm2 restart gasbutano', {
-      timeout: 30000
-    });
-    
-    console.log('✅ PM2 reiniciado');
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Rebuild e restart executados com sucesso',
-      build_output: buildOutput.substring(0, 500), // Primeiros 500 chars
-      pm2_output: pm2Output
-    });
+    try {
+      const { stdout: buildOutput, stderr: buildError } = await execAsync('npm run build', {
+        cwd: process.cwd(),
+        timeout: 300000 // 5 minutos
+      });
+      
+      console.log('✅ Build concluído');
+      console.log('🔄 Reiniciando PM2...');
+      
+      // Tentar com diferentes comandos PM2
+      let pm2Output = '';
+      try {
+        const result = await execAsync('/usr/bin/pm2 restart gasbutano', {
+          timeout: 30000
+        });
+        pm2Output = result.stdout;
+      } catch (pm2Error: any) {
+        // Se falhar com caminho completo, tentar sem
+        try {
+          const result = await execAsync('pm2 restart gasbutano', {
+            timeout: 30000,
+            env: { ...process.env, PATH: process.env.PATH + ':/usr/bin:/usr/local/bin' }
+          });
+          pm2Output = result.stdout;
+        } catch (pm2Error2: any) {
+          console.warn('⚠️ Não foi possível reiniciar PM2 automaticamente:', pm2Error2.message);
+          pm2Output = 'PM2 restart falhou - reinicie manualmente com: pm2 restart gasbutano';
+        }
+      }
+      
+      console.log('✅ PM2 reiniciado');
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Rebuild concluído com sucesso',
+        build_output: buildOutput.substring(0, 500), // Primeiros 500 chars
+        pm2_output: pm2Output,
+        warning: pm2Output.includes('falhou') ? 'Reinicie o PM2 manualmente' : undefined
+      });
+    } catch (buildError: any) {
+      throw new Error(`Build failed: ${buildError.message}`);
+    }
     
   } catch (error: any) {
     return NextResponse.json(
