@@ -94,8 +94,14 @@ export async function POST(request: NextRequest) {
       const regex = new RegExp(`'${domain}':\\s*{[^}]*},?`, 'g');
       fileContent = fileContent.replace(regex, newConfig);
     } else {
-      // Adicionar novo domínio antes do fechamento do objeto
-      fileContent = fileContent.replace(/};(\s*)$/, `,\n\n${newConfig}\n};$1`);
+      // Adicionar novo domínio antes do comentário "// Adicione mais domínios"
+      const marker = '  // Adicione mais domínios aqui conforme necessário';
+      if (fileContent.includes(marker)) {
+        fileContent = fileContent.replace(marker, `${newConfig}\n\n${marker}`);
+      } else {
+        // Fallback: adicionar antes do fechamento do objeto
+        fileContent = fileContent.replace(/^};/m, `${newConfig}\n};`);
+      }
     }
     
     // Fazer backup
