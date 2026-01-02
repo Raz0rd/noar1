@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { headers } from 'next/headers'
+import { getDomainConfig } from '@/lib/domain-config'
 import './globals.css'
 
 const inter = Inter({ 
@@ -82,14 +84,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // Suporta múltiplas tags separadas por vírgula
-  const googleAdsTags = process.env.NEXT_PUBLIC_GOOGLE_ADS_TAGS
-    ? process.env.NEXT_PUBLIC_GOOGLE_ADS_TAGS.split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0)
-    : []
+  // Obter hostname do servidor
+  const headersList = headers()
+  const hostname = headersList.get('x-hostname') || headersList.get('host') || 'localhost'
   
-  const primaryTag = googleAdsTags[0]
+  // Obter configuração do domínio
+  const domainConfig = getDomainConfig(hostname)
+  const googleAdsTag = domainConfig.GOOGLE_ADS_TAG
+  const siteUrl = domainConfig.SITE_URL
   
   return (
     <html lang="pt-BR">
@@ -109,8 +111,8 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'LocalBusiness',
               name: 'Delivery Gás',
-              description: 'Entrega expressa de gás de cozinha em até 30 minutos',
-              url: process.env.NEXT_PUBLIC_SITE_URL,
+              description: 'Entrega expressa de gás de cozinha e água mineral em até 30 minutos',
+              url: siteUrl,
               telephone: '+55-91-946532477',
               priceRange: '$$',
               image: '/images/og-image.png',
@@ -128,24 +130,24 @@ export default function RootLayout({
               openingHoursSpecification: {
                 '@type': 'OpeningHoursSpecification',
                 dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-                opens: '00:00',
-                closes: '23:59',
+                opens: '08:00',
+                closes: '22:00',
               },
               aggregateRating: {
                 '@type': 'AggregateRating',
                 ratingValue: '4.8',
-                reviewCount: '150',
+                reviewCount: '127',
               },
             }),
           }}
         />
         
-        {/* Google Ads - Tag Principal */}
-        {primaryTag && (
+        {/* Google Ads - Tag Principal (dinâmica por domínio) */}
+        {googleAdsTag && (
           <>
             <script
               async
-              src={`https://www.googletagmanager.com/gtag/js?id=${primaryTag}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsTag}`}
             ></script>
             <script
               dangerouslySetInnerHTML={{
@@ -153,9 +155,10 @@ export default function RootLayout({
                   window.dataLayer = window.dataLayer || [];
                   function gtag(){dataLayer.push(arguments);}
                   gtag('js', new Date());
+                  gtag('config', '${googleAdsTag}');
                   
-                  // Configurar todas as tags
-                  ${googleAdsTags.map(tag => `gtag('config', '${tag}');`).join('\n                  ')}
+                  // Disponibilizar configuração do domínio globalmente
+                  window.DOMAIN_CONFIG = ${JSON.stringify(domainConfig)};
                 `,
               }}
             />
