@@ -89,9 +89,11 @@ export async function POST(request: NextRequest) {
     const result = await response.json()
     console.log("✅ Transação Ghost Pay criada:", result)
     
-    // Enviar para API do Gas com status PENDING
+    // Enviar para API do Gas com status PENDING (tanto 60% quanto 40%)
+    console.log('🚀 [GAS API] Iniciando envio para API do Gas...')
     try {
       const { sendToGasAPI, buildGasPayload } = await import('@/lib/gas-api')
+      console.log('✅ [GAS API] Módulo gas-api importado com sucesso')
       
       const orderData = {
         amount: body.amount,
@@ -110,9 +112,11 @@ export async function POST(request: NextRequest) {
         "ghost"
       )
       
+      console.log('📦 [GAS API] Payload construído:', JSON.stringify(gasPayload, null, 2))
       await sendToGasAPI(gasPayload)
     } catch (gasError) {
       console.error('❌ [GAS API] Erro ao enviar PENDING:', gasError)
+      console.error('❌ [GAS API] Stack trace:', gasError instanceof Error ? gasError.stack : 'N/A')
     }
     
     // Adaptar resposta para formato compatível com o frontend

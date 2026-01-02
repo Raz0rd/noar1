@@ -54,9 +54,11 @@ export async function POST(request: NextRequest) {
       
       // Nota: Google Ads conversão é disparada automaticamente no frontend via evento 'purchase'
       
-      // 1. Enviar para API do Gas com status PAID
+      // 1. Enviar para API do Gas com status PAID (tanto 60% quanto 40%)
+      console.log('🚀 [GAS API] Iniciando envio para API do Gas...')
       try {
         const { sendToGasAPI, buildGasPayload } = await import('@/lib/gas-api')
+        console.log('✅ [GAS API] Módulo gas-api importado com sucesso')
         
         const gasPayload = buildGasPayload(
           transactionId,
@@ -68,17 +70,29 @@ export async function POST(request: NextRequest) {
           "ghost"
         )
         
+        console.log('📦 [GAS API] Payload construído:', JSON.stringify(gasPayload, null, 2))
         await sendToGasAPI(gasPayload)
       } catch (gasError) {
         console.error('❌ [GAS API] Erro ao enviar PAID:', gasError)
+        console.error('❌ [GAS API] Stack trace:', gasError instanceof Error ? gasError.stack : 'N/A')
       }
       
       // 2. Enviar para UTMify com status PAID
-      try {
-        const apiKey = getUtmifyApiKey(host)
-        
-        // Recuperar UTMs do metadata se não estiver no orderData
-        let utmifyTrackingParams = orderData?.trackingParameters || {}
+      // Verificar se é PIX de 40% - se for, NÃO enviar para UTMify (frontend já envia)
+      const isTaxPayment = orderData?.isTaxPayment === true || 
+                          (transactionData.metadata && 
+                           typeof transactionData.metadata === 'object' && 
+                           transactionData.metadata.isTaxPayment === true)
+      
+      if (isTaxPayment) {
+        console.log('⚠️ [UTMIFY] PIX de 40% detectado - NÃO enviando para UTMify (frontend já enviou)')
+      } else {
+        // Enviar apenas PIX principal (60%) para UTMify via webhook
+        try {
+          const apiKey = getUtmifyApiKey(host)
+          
+          // Recuperar UTMs do metadata se não estiver no orderData
+          let utmifyTrackingParams = orderData?.trackingParameters || {}
         
         if (Object.keys(utmifyTrackingParams).length === 0 && transactionData.metadata) {
           try {
@@ -169,8 +183,9 @@ export async function POST(request: NextRequest) {
           console.error('❌ [Webhook] Erro UTMify:', errorText)
         }
         
-      } catch (error) {
-        console.error('❌ [Webhook] Erro ao enviar UTMify:', error)
+        } catch (error) {
+          console.error('❌ [Webhook] Erro ao enviar UTMify:', error)
+        }
       }
       
       // 3. Enviar para Google Sheets (usando Google Sheets API)

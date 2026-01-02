@@ -67,7 +67,7 @@ export default function LocationHeader() {
   }
 
   return (
-    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2 px-4 shadow-md">
+    <div className="bg-gradient-to-r from-blue-700 to-cyan-600 text-white py-2 px-4 shadow-md">
       <div className="container mx-auto">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center">
           <div className="flex items-center gap-2">
