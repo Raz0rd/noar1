@@ -33,3 +33,6 @@ next-env.d.ts
 
 # Scripts de deploy/update
 *.sh
+
+# Configuração de domínios (gerado dinamicamente)
+lib/domain-config.ts
