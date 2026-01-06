@@ -36,7 +36,7 @@ const GATEWAYS: GatewayConfig[] = [
   {
     id: 'nitro',
     name: 'Nitro Pagamentos',
-    enabled: false, // Desabilitado
+    enabled: true, // Desabilitado
     endpoint: '/api/nitro-transaction',
     checkEndpoint: '/api/check-nitro-payment',
     priority: 1
@@ -44,7 +44,7 @@ const GATEWAYS: GatewayConfig[] = [
   {
     id: 'ghost',
     name: 'Ghost Pay',
-    enabled: true,
+    enabled: false,
     endpoint: '/api/ghost-transaction',
     checkEndpoint: '/api/check-ghost-payment',
     priority: 1

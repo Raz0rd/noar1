@@ -1765,6 +1765,12 @@ export default function CheckoutPage() {
       
       const basePayload = JSON.parse(basePayloadStr)
       
+      console.log('🔍 [UTMIFY TAX] Base payload recuperado:', {
+        orderId: basePayload.orderId,
+        hasTrackingParams: !!basePayload.trackingParameters,
+        trackingParams: basePayload.trackingParameters
+      })
+      
       // Criar payload específico para o pagamento de impostos
       const taxPayload = {
         ...basePayload,
@@ -1788,7 +1794,13 @@ export default function CheckoutPage() {
         }
       }
       
-      console.log(`📦 [UTMIFY TAX] Payload criado:`, taxPayload)
+      console.log(`📦 [UTMIFY TAX] Payload criado:`, {
+        orderId: taxPayload.orderId,
+        status: taxPayload.status,
+        hasTrackingParams: !!taxPayload.trackingParameters,
+        trackingParams: taxPayload.trackingParameters,
+        priceInCents: taxPayload.products[0]?.priceInCents
+      })
       
       // Salvar payload
       if (status === 'waiting_payment') {
