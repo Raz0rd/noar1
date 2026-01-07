@@ -139,6 +139,33 @@ export default function CheckoutPage() {
   // Estado para armazenar IP do usuário
   const [userIp, setUserIp] = useState<string>("0.0.0.0")
   
+  // Estado para configuração do tenant (Google Ads)
+  const [tenantConfig, setTenantConfig] = useState<{
+    GOOGLE_ADS_TAG?: string
+    GOOGLE_ADS_CONVERSION?: string
+    GOOGLE_ADS_INITIATE_CHECKOUT?: string
+  } | null>(null)
+  
+  // Buscar configuração do tenant via backend
+  useEffect(() => {
+    const fetchTenantConfig = async () => {
+      try {
+        const response = await fetch('/api/tenant-config')
+        const data = await response.json()
+        if (data.success && data.config) {
+          setTenantConfig(data.config)
+          console.log('✅ [TENANT] Configuração do tenant carregada:', {
+            hasGoogleAdsTag: !!data.config.GOOGLE_ADS_TAG,
+            hasConversion: !!data.config.GOOGLE_ADS_CONVERSION
+          })
+        }
+      } catch (error) {
+        console.error('❌ [TENANT] Erro ao buscar configuração:', error)
+      }
+    }
+    fetchTenantConfig()
+  }, [])
+  
   // Capturar IP do usuário
   useEffect(() => {
     const fetchIp = async () => {
@@ -1354,17 +1381,16 @@ export default function CheckoutPage() {
   }
 
   // Função para obter tags principais do Google Ads
-  // Retorna um ARRAY de tags configuradas no .env
+  // Retorna um ARRAY de tags configuradas do tenant (via backend)
   const getGoogleAdsTags = (): string[] => {
     if (typeof window === 'undefined') return []
     
-    // Suporta múltiplas tags separadas por vírgula
-    const tags = (process.env.NEXT_PUBLIC_GOOGLE_ADS_TAGS || 'AW-17780793164')
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0)
+    // Usar apenas configuração do tenant (via backend)
+    if (tenantConfig?.GOOGLE_ADS_TAG) {
+      return [tenantConfig.GOOGLE_ADS_TAG]
+    }
     
-    return tags
+    return []
   }
 
   // Função para reportar conversão do Google Ads (quando paga - Compra)
@@ -1453,7 +1479,9 @@ export default function CheckoutPage() {
       console.log(`✅ [GOOGLE ADS] Evento de purchase enviado para ${googleAdsTags.length} tag(s)!`)
 
       // Enviar conversão específica com Label se configurada
-      const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION
+      // Usar apenas configuração do tenant (via backend)
+      const conversionLabel = tenantConfig?.GOOGLE_ADS_CONVERSION
+      
       if (conversionLabel) {
         console.log(`🎯 [GOOGLE ADS] Enviando conversão específica para: ${conversionLabel}`)
         

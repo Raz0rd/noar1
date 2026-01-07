@@ -156,9 +156,6 @@ export default function RootLayout({
                   function gtag(){dataLayer.push(arguments);}
                   gtag('js', new Date());
                   gtag('config', '${googleAdsTag}');
-                  
-                  // Disponibilizar configuração do domínio globalmente
-                  window.DOMAIN_CONFIG = ${JSON.stringify(domainConfig)};
                 `,
               }}
             />
