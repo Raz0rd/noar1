@@ -7,10 +7,20 @@ export async function GET(request: NextRequest) {
   try {
     // Obter hostname do request
     const headersList = headers()
-    const hostname = headersList.get('x-hostname') || headersList.get('host') || 'localhost'
+    let hostname = headersList.get('x-hostname') || headersList.get('host') || 'localhost'
+    
+    // Remover porta se existir (ex: deliverygazz.store:443 -> deliverygazz.store)
+    hostname = hostname.split(':')[0]
+    
+    console.log('[TENANT-CONFIG] Hostname detectado:', hostname)
     
     // Obter configuração do domínio atual
     const domainConfig = getDomainConfig(hostname)
+    
+    console.log('[TENANT-CONFIG] Configuração carregada:', {
+      domain: hostname,
+      tag: domainConfig.GOOGLE_ADS_TAG
+    })
     
     // Retornar apenas as informações necessárias para o Google Ads
     // NÃO expor informações de outros domínios

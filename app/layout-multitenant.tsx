@@ -86,7 +86,10 @@ export default function RootLayout({
 }>) {
   // Obter hostname do servidor
   const headersList = headers()
-  const hostname = headersList.get('x-hostname') || headersList.get('host') || 'localhost'
+  let hostname = headersList.get('x-hostname') || headersList.get('host') || 'localhost'
+  
+  // Remover porta se existir (ex: deliverygazz.store:443 -> deliverygazz.store)
+  hostname = hostname.split(':')[0]
   
   // Obter configuração do domínio
   const domainConfig = getDomainConfig(hostname)
