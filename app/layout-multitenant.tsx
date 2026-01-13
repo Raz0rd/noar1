@@ -165,28 +165,32 @@ export default function RootLayout({
           </>
         )}
         
-        {/* UTMify - Script de captura de UTMs (OBRIGATÓRIO) */}
-        <script
-          src="https://cdn.utmify.com.br/scripts/utms/latest.js"
-          data-utmify-prevent-xcod-sck
-          data-utmify-prevent-subids
-          async
-          defer
-        ></script>
+        {/* UTMify - Script de captura de UTMs (desativado em localhost) */}
+        {!hostname.includes('localhost') && (
+          <script
+            src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+            data-utmify-prevent-xcod-sck
+            data-utmify-prevent-subids
+            async
+            defer
+          ></script>
+        )}
         
-        {/* UTMify - Pixel do Google */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.googlePixelId = "6920b671786d74e4309d5c3b";
-              var a = document.createElement("script");
-              a.setAttribute("async", "");
-              a.setAttribute("defer", "");
-              a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel-google.js");
-              document.head.appendChild(a);
-            `,
-          }}
-        />
+        {/* UTMify - Pixel do Google (desativado em localhost) */}
+        {!hostname.includes('localhost') && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.googlePixelId = "6920b671786d74e4309d5c3b";
+                var a = document.createElement("script");
+                a.setAttribute("async", "");
+                a.setAttribute("defer", "");
+                a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel-google.js");
+                document.head.appendChild(a);
+              `,
+            }}
+          />
+        )}
       </head>
       <body className={`${inter.className} antialiased`}>
         {children}
